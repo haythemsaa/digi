@@ -1,0 +1,264 @@
+/**
+ * DigiParc Fleet Management - Custom CSS
+ * Additional custom styles
+ */
+
+/* Custom animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Fade in animation for cards */
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Hover effects for stat cards */
+.stat-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+}
+
+/* Sidebar animations */
+.sidebar .nav-link {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar .nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: white;
+    transform: scaleY(0);
+    transition: transform 0.3s;
+}
+
+.sidebar .nav-link:hover::before,
+.sidebar .nav-link.active::before {
+    transform: scaleY(1);
+}
+
+/* Button animations */
+.btn {
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+    z-index: -1;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Table row hover */
+.table tbody tr {
+    transition: all 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Badge pulse animation */
+.badge.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 99, 71, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 99, 71, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 99, 71, 0); }
+}
+
+/* Loading skeleton */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #667eea;
+}
+
+/* Alert animations */
+.alert {
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Map marker custom style */
+.vehicle-marker {
+    animation: bounce 2s infinite;
+}
+
+/* Chart container */
+canvas {
+    max-height: 400px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 15px;
+    }
+
+    .topbar h4 {
+        font-size: 1.2rem;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        transition: left 0.3s;
+        z-index: 1000;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .topbar,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    .main-content {
+        padding: 0 !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+    /* Uncomment when implementing dark mode */
+    /*
+    body {
+        background-color: #1a1a1a;
+        color: #f0f0f0;
+    }
+
+    .card {
+        background-color: #2d2d2d;
+        color: #f0f0f0;
+    }
+    */
+}
+
+/* Utility classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.transition-all {
+    transition: all 0.3s;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Loading overlay improvements */
+.spinner-overlay {
+    backdrop-filter: blur(5px);
+}
+
+/* Notification badge positioning */
+.position-relative .notification-badge {
+    animation: pulse 2s infinite;
+}
+
+/* Custom form controls */
+.form-control:focus,
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+/* Success message animation */
+.alert-success {
+    border-left: 4px solid #198754;
+}
+
+.alert-danger {
+    border-left: 4px solid #dc3545;
+}
+
+.alert-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
