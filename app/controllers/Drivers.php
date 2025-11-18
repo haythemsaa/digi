@@ -29,6 +29,26 @@ class Drivers extends Controller {
         $this->view('drivers/index', $data);
     }
 
+    public function add() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+            if ($this->driversModel->addDriverProfile($_POST)) {
+                $_SESSION['success'] = 'Driver added successfully';
+                $this->redirect('drivers');
+            } else {
+                $_SESSION['error'] = 'Failed to add driver';
+            }
+        }
+
+        $data = [
+            'active_menu' => 'drivers',
+            'page_title' => 'Add Driver'
+        ];
+
+        $this->view('drivers/add', $data);
+    }
+
     public function infractions() {
         $infractions = $this->driversModel->getDriverInfractions();
 

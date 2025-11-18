@@ -56,7 +56,7 @@ class Financial extends Controller {
         $data = [
             'accounts' => $accounts,
             'active_menu' => 'financial',
-            'page_title'] = 'Add Transaction'
+            'page_title' => 'Add Transaction'
         ];
 
         $this->view('financial/add_transaction', $data);
