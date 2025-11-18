@@ -5,6 +5,56 @@
         </div>
     </div>
 
+    <!-- PWA Install Prompt -->
+    <div id="pwaInstallPrompt" class="alert alert-info position-fixed bottom-0 start-50 translate-middle-x m-3" style="display: none; z-index: 9999;">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-mobile-alt fa-2x me-3"></i>
+            <div class="flex-grow-1">
+                <strong>Install DigiParc App</strong>
+                <p class="mb-0 small">Install our app for a better experience!</p>
+            </div>
+            <button id="pwaInstallBtn" class="btn btn-primary btn-sm me-2">Install</button>
+            <button id="pwaDismissBtn" class="btn btn-secondary btn-sm">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Register Service Worker -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('<?php echo APP_URL; ?>/public/service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker registered:', registration);
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed:', err);
+                });
+        });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('pwaInstallPrompt').style.display = 'block';
+    });
+
+    document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            deferredPrompt = null;
+            document.getElementById('pwaInstallPrompt').style.display = 'none';
+        }
+    });
+
+    document.getElementById('pwaDismissBtn')?.addEventListener('click', () => {
+        document.getElementById('pwaInstallPrompt').style.display = 'none';
+    });
+    </script>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 

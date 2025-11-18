@@ -1,0 +1,68 @@
+<?php
+/**
+ * Drivers & HR Controller
+ */
+
+class Drivers extends Controller {
+
+    private $driversModel;
+    private $userModel;
+    private $vehicleModel;
+
+    public function __construct() {
+        $this->driversModel = $this->model('Drivers');
+        $this->userModel = $this->model('User');
+        $this->vehicleModel = $this->model('Vehicle');
+    }
+
+    public function index() {
+        $drivers = $this->driversModel->getAllDriverProfiles();
+        $expiringLicenses = $this->driversModel->getExpiringLicenses(30);
+
+        $data = [
+            'drivers' => $drivers,
+            'expiring_licenses' => $expiringLicenses,
+            'active_menu' => 'drivers',
+            'page_title' => 'Drivers & HR Management'
+        ];
+
+        $this->view('drivers/index', $data);
+    }
+
+    public function infractions() {
+        $infractions = $this->driversModel->getDriverInfractions();
+
+        $data = [
+            'infractions' => $infractions,
+            'active_menu' => 'drivers',
+            'page_title' => 'Driver Infractions'
+        ];
+
+        $this->view('drivers/infractions', $data);
+    }
+
+    public function addInfraction() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+            if ($this->driversModel->addInfraction($_POST)) {
+                $_SESSION['success'] = 'Infraction added successfully';
+                $this->redirect('drivers/infractions');
+            } else {
+                $_SESSION['error'] = 'Failed to add infraction';
+            }
+        }
+
+        $drivers = $this->userModel->getDrivers();
+        $vehicles = $this->vehicleModel->getAllVehicles();
+
+        $data = [
+            'drivers' => $drivers,
+            'vehicles' => $vehicles,
+            'active_menu' => 'drivers',
+            'page_title' => 'Add Infraction'
+        ];
+
+        $this->view('drivers/add_infraction', $data);
+    }
+}
