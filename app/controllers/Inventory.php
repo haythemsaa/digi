@@ -45,6 +45,34 @@ class Inventory extends Controller {
         $this->view('inventory/add_part', $data);
     }
 
+    public function editPart($id) {
+        $part = $this->inventoryModel->getPartById($id);
+
+        if (!$part) {
+            $_SESSION['error'] = 'Part not found';
+            $this->redirect('inventory');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+            if ($this->inventoryModel->updatePart($id, $_POST)) {
+                $_SESSION['success'] = 'Part updated successfully';
+                $this->redirect('inventory');
+            } else {
+                $_SESSION['error'] = 'Failed to update part';
+            }
+        }
+
+        $data = [
+            'part' => $part,
+            'active_menu' => 'inventory',
+            'page_title' => 'Edit Part'
+        ];
+
+        $this->view('inventory/edit_part', $data);
+    }
+
     public function movements() {
         $movements = $this->inventoryModel->getStockMovements();
 

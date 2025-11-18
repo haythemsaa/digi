@@ -49,6 +49,34 @@ class Drivers extends Controller {
         $this->view('drivers/add', $data);
     }
 
+    public function edit($id) {
+        $driver = $this->driversModel->getDriverProfileById($id);
+
+        if (!$driver) {
+            $_SESSION['error'] = 'Driver not found';
+            $this->redirect('drivers');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+            if ($this->driversModel->updateDriverProfile($id, $_POST)) {
+                $_SESSION['success'] = 'Driver updated successfully';
+                $this->redirect('drivers');
+            } else {
+                $_SESSION['error'] = 'Failed to update driver';
+            }
+        }
+
+        $data = [
+            'driver' => $driver,
+            'active_menu' => 'drivers',
+            'page_title' => 'Edit Driver'
+        ];
+
+        $this->view('drivers/edit', $data);
+    }
+
     public function infractions() {
         $infractions = $this->driversModel->getDriverInfractions();
 

@@ -39,6 +39,26 @@ class Financial extends Controller {
         $this->view('financial/accounts', $data);
     }
 
+    public function addAccount() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+            if ($this->financialModel->addAccount($_POST)) {
+                $_SESSION['success'] = 'Account created successfully';
+                $this->redirect('financial');
+            } else {
+                $_SESSION['error'] = 'Failed to create account';
+            }
+        }
+
+        $data = [
+            'active_menu' => 'financial',
+            'page_title' => 'Add Account'
+        ];
+
+        $this->view('financial/add_account', $data);
+    }
+
     public function addTransaction() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
