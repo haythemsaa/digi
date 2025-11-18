@@ -96,4 +96,13 @@ class Supplier extends Database {
         $result = $this->fetch();
         return $prefix . str_pad($result['count'] + 1, 4, '0', STR_PAD_LEFT);
     }
+
+    public function getPurchaseOrderById($id) {
+        $this->query('SELECT po.*, s.company_name, s.email, s.phone, s.address, s.city
+            FROM purchase_orders po
+            LEFT JOIN suppliers s ON po.supplier_id = s.id
+            WHERE po.id = :id');
+        $this->bind(':id', $id);
+        return $this->fetch();
+    }
 }

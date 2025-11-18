@@ -68,4 +68,38 @@ class Procurement extends Controller {
 
         $this->view('procurement/add_purchase_order', $data);
     }
+
+    public function viewSupplier($id) {
+        $supplier = $this->supplierModel->getSupplierById($id);
+
+        if (!$supplier) {
+            $_SESSION['error'] = 'Supplier not found';
+            $this->redirect('procurement');
+        }
+
+        $data = [
+            'supplier' => $supplier,
+            'active_menu' => 'procurement',
+            'page_title' => 'View Supplier'
+        ];
+
+        $this->view('procurement/view_supplier', $data);
+    }
+
+    public function viewPO($id) {
+        $purchaseOrder = $this->supplierModel->getPurchaseOrderById($id);
+
+        if (!$purchaseOrder) {
+            $_SESSION['error'] = 'Purchase order not found';
+            $this->redirect('procurement');
+        }
+
+        $data = [
+            'purchase_order' => $purchaseOrder,
+            'active_menu' => 'procurement',
+            'page_title' => 'View Purchase Order'
+        ];
+
+        $this->view('procurement/view_po', $data);
+    }
 }
