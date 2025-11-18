@@ -1,0 +1,13 @@
+{
+    "name": "digiparc/fleet-management",
+    "description": "Professional Fleet Management System - DigiParc Clone",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
