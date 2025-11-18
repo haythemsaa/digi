@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <title>DigiParc Driver - Application Chauffeur</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="img/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/app.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-spinner">
+                <i class="fas fa-truck fa-3x"></i>
+                <p>Chargement...</p>
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="login-page" class="page active">
+            <div class="login-container">
+                <div class="login-header">
+                    <i class="fas fa-truck fa-4x"></i>
+                    <h1>DigiParc Driver</h1>
+                    <p>Application Chauffeur</p>
+                </div>
+
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Identifiant</label>
+                        <input type="text" id="username" name="username" placeholder="Votre identifiant" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Mot de passe</label>
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember-me">
+                            <span>Se souvenir de moi</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Connexion
+                    </button>
+                </form>
+
+                <div id="login-error" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Main App (after login) -->
+        <div id="main-app" class="page">
+            <!-- Top Navigation Bar -->
+            <div class="navbar">
+                <div class="navbar-brand">
+                    <i class="fas fa-truck"></i>
+                    <span id="driver-name">Chauffeur</span>
+                </div>
+                <div class="navbar-actions">
+                    <button id="sync-btn" class="btn-icon" title="Synchroniser">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                    <button id="notifications-btn" class="btn-icon" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge" id="notification-count" style="display: none;">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view active">
+                    <div class="stats-grid">
+                        <div class="stat-card stat-primary">
+                            <i class="fas fa-clipboard-list"></i>
+                            <div class="stat-content">
+                                <h3 id="stat-orders">0</h3>
+                                <p>Missions Actives</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="stat-content">
+                                <h3 id="stat-completed">0</h3>
+                                <p>Livrées Aujourd'hui</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-info">
+                            <i class="fas fa-road"></i>
+                            <div class="stat-content">
+                                <h3 id="stat-distance">0</h3>
+                                <p>KM Parcourus</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-warning">
+                            <i class="fas fa-clock"></i>
+                            <div class="stat-content">
+                                <h3 id="stat-hours">0</h3>
+                                <p>Heures de Travail</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h2>Missions du Jour</h2>
+                        <div id="today-orders" class="orders-list">
+                            <!-- Orders will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button id="start-trip-btn" class="btn btn-success btn-lg">
+                            <i class="fas fa-play"></i> Démarrer Mission
+                        </button>
+                        <button id="emergency-btn" class="btn btn-danger btn-lg">
+                            <i class="fas fa-exclamation-triangle"></i> Urgence
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Orders View -->
+                <div id="orders-view" class="view">
+                    <div class="section">
+                        <h2>Mes Missions</h2>
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="pending">En Cours</button>
+                            <button class="tab-btn" data-tab="completed">Terminées</button>
+                        </div>
+                        <div id="orders-list" class="orders-list">
+                            <!-- Orders will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trip View (Current Trip) -->
+                <div id="trip-view" class="view">
+                    <div id="trip-details" class="trip-container">
+                        <div class="trip-header">
+                            <h2>Mission en Cours</h2>
+                            <span id="trip-status" class="badge badge-info">En Transit</span>
+                        </div>
+
+                        <div class="trip-info">
+                            <div class="info-row">
+                                <i class="fas fa-map-marker-alt text-success"></i>
+                                <div>
+                                    <strong>Départ</strong>
+                                    <p id="trip-pickup">-</p>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <i class="fas fa-map-marker-alt text-danger"></i>
+                                <div>
+                                    <strong>Destination</strong>
+                                    <p id="trip-delivery">-</p>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <i class="fas fa-box"></i>
+                                <div>
+                                    <strong>Cargaison</strong>
+                                    <p id="trip-cargo">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="map-container" class="map-container">
+                            <!-- Map will be rendered here -->
+                        </div>
+
+                        <div class="trip-actions">
+                            <button id="arrived-pickup-btn" class="btn btn-info btn-block" style="display: none;">
+                                <i class="fas fa-check"></i> Arrivé au Point de Départ
+                            </button>
+                            <button id="loaded-btn" class="btn btn-primary btn-block" style="display: none;">
+                                <i class="fas fa-box-open"></i> Chargement Effectué
+                            </button>
+                            <button id="arrived-delivery-btn" class="btn btn-warning btn-block" style="display: none;">
+                                <i class="fas fa-check"></i> Arrivé à Destination
+                            </button>
+                            <button id="delivered-btn" class="btn btn-success btn-block" style="display: none;">
+                                <i class="fas fa-check-circle"></i> Livraison Effectuée
+                            </button>
+                            <button id="end-trip-btn" class="btn btn-secondary btn-block">
+                                <i class="fas fa-stop"></i> Terminer Mission
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile View -->
+                <div id="profile-view" class="view">
+                    <div class="profile-container">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle fa-5x"></i>
+                            </div>
+                            <h2 id="profile-name">Chauffeur</h2>
+                            <p id="profile-role">Conducteur Professionnel</p>
+                        </div>
+
+                        <div class="profile-stats">
+                            <div class="profile-stat">
+                                <h3 id="profile-total-trips">0</h3>
+                                <p>Missions Totales</p>
+                            </div>
+                            <div class="profile-stat">
+                                <h3 id="profile-total-km">0</h3>
+                                <p>KM Total</p>
+                            </div>
+                            <div class="profile-stat">
+                                <h3 id="profile-rating">5.0</h3>
+                                <p>Évaluation</p>
+                            </div>
+                        </div>
+
+                        <div class="profile-menu">
+                            <a href="#" class="menu-item">
+                                <i class="fas fa-id-card"></i>
+                                <span>Informations Personnelles</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="#" class="menu-item">
+                                <i class="fas fa-history"></i>
+                                <span>Historique des Missions</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="#" class="menu-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Paramètres</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="#" id="logout-btn" class="menu-item text-danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Déconnexion</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <button class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Accueil</span>
+                </button>
+                <button class="nav-item" data-view="orders">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Missions</span>
+                </button>
+                <button class="nav-item" data-view="trip">
+                    <i class="fas fa-route"></i>
+                    <span>Trajet</span>
+                </button>
+                <button class="nav-item" data-view="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profil</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/location.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.log('Service Worker registration failed', err));
+        }
+    </script>
+</body>
+</html>
