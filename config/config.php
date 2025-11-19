@@ -46,3 +46,6 @@ define('SMS_API_URL', '');
 
 // Maps API (for GPS tracking)
 define('MAPS_API_KEY', ''); // Google Maps or OpenStreetMap
+
+// Load Helpers
+require_once APP_PATH . '/helpers/subscription_helper.php';

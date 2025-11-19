@@ -26,9 +26,12 @@
 
                 <!-- GPS & Tracking -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'tracking') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/tracking">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'tracking') ? 'active' : ''; ?> <?php echo !hasModuleAccess('gps') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('gps') ? APP_URL . '/tracking' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-map-marked-alt"></i> GPS Tracking
+                        <?php if (!hasModuleAccess('gps')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
@@ -42,17 +45,23 @@
 
                 <!-- Maintenance -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'maintenance') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/maintenance">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'maintenance') ? 'active' : ''; ?> <?php echo !hasModuleAccess('maintenance') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('maintenance') ? APP_URL . '/maintenance' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-tools"></i> Maintenance
+                        <?php if (!hasModuleAccess('maintenance')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
                 <!-- Drivers & HR -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'drivers') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/drivers">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'drivers') ? 'active' : ''; ?> <?php echo !hasModuleAccess('hr') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('hr') ? APP_URL . '/drivers' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-id-card"></i> Drivers & HR
+                        <?php if (!hasModuleAccess('hr')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
@@ -90,9 +99,12 @@
 
                 <!-- Stock Management -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'stock') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/stock">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'stock') ? 'active' : ''; ?> <?php echo !hasModuleAccess('stocks') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('stocks') ? APP_URL . '/stock' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-warehouse"></i> Stock Management
+                        <?php if (!hasModuleAccess('stocks')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
@@ -122,17 +134,23 @@
 
                 <!-- Smart Delivery AI -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'smart_delivery') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/smart_delivery">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'smart_delivery') ? 'active' : ''; ?> <?php echo !hasModuleAccess('delivery') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('delivery') ? APP_URL . '/smart_delivery' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-brain"></i> Smart Delivery AI
+                        <?php if (!hasModuleAccess('delivery')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
                 <!-- Passenger Transport (Taxi & Bus) -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'passenger_transport') ? 'active' : ''; ?>"
-                       href="<?php echo APP_URL; ?>/passenger_transport">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'passenger_transport') ? 'active' : ''; ?> <?php echo !hasModuleAccess('taxi') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('taxi') ? APP_URL . '/passenger_transport' : APP_URL . '/subscription-manager'; ?>">
                         <i class="fas fa-taxi"></i> Transport Voyageurs
+                        <?php if (!hasModuleAccess('taxi')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
                     </a>
                 </li>
 
@@ -144,7 +162,22 @@
                     </a>
                 </li>
 
+                <!-- My Subscription -->
+                <li class="nav-item mt-3 pt-3 border-top border-white border-opacity-25">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'my_subscription') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/subscription-manager/mySubscription">
+                        <i class="fas fa-star text-warning"></i> Mon Abonnement
+                    </a>
+                </li>
+
                 <?php if ($_SESSION['role'] === 'admin'): ?>
+                <!-- Subscription Management (Admin) -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'subscriptions') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/subscription-manager/modules">
+                        <i class="fas fa-puzzle-piece"></i> Modules & Packs
+                    </a>
+                </li>
                 <!-- Settings (Admin only) -->
                 <li class="nav-item mt-3 pt-3 border-top border-white border-opacity-25">
                     <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'users') ? 'active' : ''; ?>"

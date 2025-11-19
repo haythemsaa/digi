@@ -1920,3 +1920,182 @@ INSERT INTO `pricing_zones` (`zone_name`, `zone_type`, `base_fare`, `price_per_k
 ('Banlieue', 'suburb', 5.00, 1.00, 0.15, 7.00, 30, 15, TRUE),
 ('Aéroport Carthage', 'airport', 10.00, 1.20, 0.20, 15.00, 20, 10, TRUE),
 ('Intercity', 'intercity', 15.00, 1.50, 0.25, 25.00, 50, 20, TRUE);
+
+-- ======================================================================
+-- SUBSCRIPTION SYSTEM - Modular Feature Management
+-- ======================================================================
+
+-- Subscription Modules (Individual features)
+CREATE TABLE IF NOT EXISTS `subscription_modules` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `module_code` VARCHAR(50) UNIQUE NOT NULL COMMENT 'Unique identifier: gps, taxi, delivery, etc.',
+  `module_name` VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `price_monthly` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `price_yearly` DECIMAL(10,2) DEFAULT 0 COMMENT 'Annual price (usually 10 months)',
+  `features` TEXT COMMENT 'JSON array of features included',
+  `icon` VARCHAR(100) DEFAULT 'fa-star',
+  `color` VARCHAR(20) DEFAULT '#007bff',
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `sort_order` INT(11) DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code` (`module_code`),
+  KEY `idx_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Subscription Packs (Bundles of modules)
+CREATE TABLE IF NOT EXISTS `subscription_packs` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pack_code` VARCHAR(50) UNIQUE NOT NULL COMMENT 'taxi_pack, delivery_pack, fleet_pack',
+  `pack_name` VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `price_monthly` DECIMAL(10,2) NOT NULL,
+  `price_yearly` DECIMAL(10,2) DEFAULT 0,
+  `discount_percent` DECIMAL(5,2) DEFAULT 0 COMMENT 'Discount vs buying modules separately',
+  `is_featured` BOOLEAN DEFAULT FALSE,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `sort_order` INT(11) DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code` (`pack_code`),
+  KEY `idx_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Pack Modules (Many-to-many relationship)
+CREATE TABLE IF NOT EXISTS `subscription_pack_modules` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pack_id` INT(11) UNSIGNED NOT NULL,
+  `module_id` INT(11) UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_pack_module` (`pack_id`, `module_id`),
+  FOREIGN KEY (`pack_id`) REFERENCES `subscription_packs`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`module_id`) REFERENCES `subscription_modules`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Company Subscriptions (Active subscriptions per company)
+CREATE TABLE IF NOT EXISTS `company_subscriptions` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` INT(11) UNSIGNED NOT NULL COMMENT 'Reference to company/client',
+  `subscription_type` ENUM('module', 'pack') NOT NULL,
+  `module_id` INT(11) UNSIGNED DEFAULT NULL,
+  `pack_id` INT(11) UNSIGNED DEFAULT NULL,
+  `billing_cycle` ENUM('monthly', 'yearly') DEFAULT 'monthly',
+  `price` DECIMAL(10,2) NOT NULL COMMENT 'Actual price paid (may differ from list price)',
+  `start_date` DATE NOT NULL,
+  `end_date` DATE DEFAULT NULL COMMENT 'NULL = active subscription',
+  `next_billing_date` DATE NOT NULL,
+  `status` ENUM('active', 'suspended', 'cancelled', 'expired') DEFAULT 'active',
+  `auto_renew` BOOLEAN DEFAULT TRUE,
+  `trial_ends_at` DATE DEFAULT NULL,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_billing_date` (`next_billing_date`),
+  FOREIGN KEY (`module_id`) REFERENCES `subscription_modules`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`pack_id`) REFERENCES `subscription_packs`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Subscription Invoices
+CREATE TABLE IF NOT EXISTS `subscription_invoices` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `invoice_number` VARCHAR(50) UNIQUE NOT NULL,
+  `company_id` INT(11) UNSIGNED NOT NULL,
+  `subscription_id` INT(11) UNSIGNED DEFAULT NULL,
+  `invoice_date` DATE NOT NULL,
+  `due_date` DATE NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `tax_amount` DECIMAL(10,2) DEFAULT 0,
+  `total_amount` DECIMAL(10,2) NOT NULL,
+  `currency` VARCHAR(10) DEFAULT 'EUR',
+  `status` ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
+  `paid_date` DATE DEFAULT NULL,
+  `payment_method` VARCHAR(50) DEFAULT NULL,
+  `payment_reference` VARCHAR(100) DEFAULT NULL,
+  `items` TEXT COMMENT 'JSON array of invoice line items',
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_invoice_number` (`invoice_number`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_due_date` (`due_date`),
+  FOREIGN KEY (`subscription_id`) REFERENCES `company_subscriptions`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Subscription History (Audit log)
+CREATE TABLE IF NOT EXISTS `subscription_history` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `company_id` INT(11) UNSIGNED NOT NULL,
+  `subscription_id` INT(11) UNSIGNED DEFAULT NULL,
+  `action` VARCHAR(50) NOT NULL COMMENT 'activated, suspended, cancelled, renewed, upgraded, downgraded',
+  `description` TEXT,
+  `old_value` TEXT COMMENT 'Previous state (JSON)',
+  `new_value` TEXT COMMENT 'New state (JSON)',
+  `performed_by` INT(11) UNSIGNED DEFAULT NULL COMMENT 'User who performed the action',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_company` (`company_id`),
+  KEY `idx_subscription` (`subscription_id`),
+  KEY `idx_action` (`action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default Modules
+INSERT INTO `subscription_modules` (`module_code`, `module_name`, `description`, `price_monthly`, `price_yearly`, `features`, `icon`, `color`, `sort_order`) VALUES
+('gps', 'GPS & Tracking', 'Suivi temps réel, géofencing, alertes de dépassement de zone', 49.00, 490.00,
+ '["Suivi en temps réel", "Géofencing", "Alertes automatiques", "Historique des trajets", "Rapports de localisation"]',
+ 'fa-map-marker-alt', '#28a745', 1),
+
+('taxi', 'Taxi & VTC', 'Gestion complète des courses avec application mobile chauffeur', 79.00, 790.00,
+ '["Gestion des réservations", "Application chauffeur", "Calcul automatique des tarifs", "Suivi des courses", "Facturation automatique"]',
+ 'fa-taxi', '#ffc107', 2),
+
+('delivery', 'Livraison IA', 'Optimisation 3D du chargement et optimisation des routes par IA', 149.00, 1490.00,
+ '["Algorithme de bin packing 3D", "Optimisation des routes IA", "Planification multi-véhicules", "Réduction des coûts", "Rapports d\'économie"]',
+ 'fa-box', '#007bff', 3),
+
+('maintenance', 'Maintenance', 'Gestion de l\'entretien préventif et interventions', 59.00, 590.00,
+ '["Planning d\'entretien", "Alertes préventives", "Historique des réparations", "Gestion des pièces", "Coûts de maintenance"]',
+ 'fa-wrench', '#dc3545', 4),
+
+('stocks', 'Stocks & Inventaire', 'Gestion des stocks multi-sites et inventaire', 69.00, 690.00,
+ '["Gestion multi-magasins", "Suivi temps réel", "Alertes de stock faible", "Inventaire physique", "Rapports de mouvement"]',
+ 'fa-warehouse', '#6f42c1', 5),
+
+('hr', 'Ressources Humaines', 'Gestion des collaborateurs, planning et absences', 89.00, 890.00,
+ '["Fiche collaborateur", "Gestion des absences", "Planning équipes", "Suivi des heures", "Documents RH"]',
+ 'fa-users', '#17a2b8', 6),
+
+('fuel', 'Carburant', 'Suivi de la consommation et économies de carburant', 39.00, 390.00,
+ '["Suivi consommation", "Cartes carburant", "Analyse d\'économie", "Alertes de surconsommation", "Rapports CO2"]',
+ 'fa-gas-pump', '#fd7e14', 7),
+
+('missions', 'Missions & Facturation', 'Planning des missions et facturation client', 49.00, 490.00,
+ '["Création de missions", "Planning visuel", "Facturation automatique", "Suivi paiements", "Rapports financiers"]',
+ 'fa-tasks', '#20c997', 8);
+
+-- Default Packs
+INSERT INTO `subscription_packs` (`pack_code`, `pack_name`, `description`, `price_monthly`, `price_yearly`, `discount_percent`, `is_featured`, `sort_order`) VALUES
+('taxi_pack', 'Pack Taxi', 'Solution complète pour taxis et VTC', 149.00, 1490.00, 15, TRUE, 1),
+('delivery_pack', 'Pack Livraison', 'Solution optimisée pour la livraison', 249.00, 2490.00, 15, TRUE, 2),
+('fleet_pack', 'Pack Flotte Complète', 'Tous les modules pour une gestion complète', 399.00, 3990.00, 30, TRUE, 3);
+
+-- Pack Modules Mapping
+INSERT INTO `subscription_pack_modules` (`pack_id`, `module_id`)
+SELECT p.id, m.id FROM `subscription_packs` p, `subscription_modules` m
+WHERE p.pack_code = 'taxi_pack' AND m.module_code IN ('gps', 'taxi', 'missions');
+
+INSERT INTO `subscription_pack_modules` (`pack_id`, `module_id`)
+SELECT p.id, m.id FROM `subscription_packs` p, `subscription_modules` m
+WHERE p.pack_code = 'delivery_pack' AND m.module_code IN ('gps', 'delivery', 'stocks');
+
+INSERT INTO `subscription_pack_modules` (`pack_id`, `module_id`)
+SELECT p.id, m.id FROM `subscription_packs` p, `subscription_modules` m
+WHERE p.pack_code = 'fleet_pack' AND m.module_code IN ('gps', 'taxi', 'delivery', 'maintenance', 'stocks', 'hr', 'fuel', 'missions');
