@@ -80,6 +80,46 @@
                     </a>
                 </li>
 
+                <!-- Purchase Requests -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'purchase_requests') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/purchase_requests">
+                        <i class="fas fa-file-invoice"></i> Purchase Requests
+                    </a>
+                </li>
+
+                <!-- Stock Management -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'stock') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/stock">
+                        <i class="fas fa-warehouse"></i> Stock Management
+                    </a>
+                </li>
+
+                <!-- Rental -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'rental') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/rental">
+                        <i class="fas fa-key"></i> Vehicle Rental
+                    </a>
+                </li>
+
+                <!-- Cash Management -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'cash') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/cash">
+                        <i class="fas fa-cash-register"></i> Cash Management
+                    </a>
+                </li>
+
+                <!-- TCO Calculator -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'tco') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/tco">
+                        <i class="fas fa-calculator"></i> TCO Calculator
+                    </a>
+                </li>
+
                 <!-- Reports -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'reports') ? 'active' : ''; ?>"

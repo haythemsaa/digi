@@ -794,3 +794,441 @@ INSERT INTO `settings` (`setting_key`, `setting_value`, `setting_type`, `descrip
 ('items_per_page', '20', 'number', 'Pagination items per page'),
 ('maintenance_alert_days', '7', 'number', 'Days before maintenance to send alert'),
 ('speed_limit_default', '120', 'number', 'Default speed limit in km/h');
+
+-- ============================================================================
+-- VEHICLE RENTAL/LOCATION MODULE
+-- ============================================================================
+
+-- Rental rates (tarification location)
+CREATE TABLE IF NOT EXISTS `rental_rates` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `vehicle_type` VARCHAR(50) NOT NULL,
+  `rate_type` ENUM('hourly', 'daily', 'weekly', 'monthly') NOT NULL DEFAULT 'daily',
+  `rate` DECIMAL(10,2) NOT NULL,
+  `deposit_amount` DECIMAL(10,2) DEFAULT 0,
+  `mileage_limit` INT(11) COMMENT 'KM limit per period',
+  `excess_km_rate` DECIMAL(10,2) COMMENT 'Rate per excess KM',
+  `insurance_included` BOOLEAN DEFAULT FALSE,
+  `fuel_policy` ENUM('full_full', 'full_empty', 'empty_empty') DEFAULT 'full_full',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_vehicle_type` (`vehicle_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Rental contracts (contrats de location)
+CREATE TABLE IF NOT EXISTS `rental_contracts` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `contract_number` VARCHAR(50) UNIQUE NOT NULL,
+  `client_id` INT(11) UNSIGNED NOT NULL,
+  `vehicle_id` INT(11) UNSIGNED NOT NULL,
+  `rate_id` INT(11) UNSIGNED,
+  `start_date` DATE NOT NULL,
+  `end_date` DATE NOT NULL,
+  `start_time` TIME,
+  `end_time` TIME,
+  `pickup_location` VARCHAR(255),
+  `return_location` VARCHAR(255),
+  `start_mileage` INT(11),
+  `end_mileage` INT(11),
+  `fuel_level_start` DECIMAL(5,2) COMMENT 'Percentage 0-100',
+  `fuel_level_end` DECIMAL(5,2) COMMENT 'Percentage 0-100',
+  `daily_rate` DECIMAL(10,2) NOT NULL,
+  `total_days` INT(11) NOT NULL,
+  `subtotal` DECIMAL(10,2) NOT NULL,
+  `deposit` DECIMAL(10,2) DEFAULT 0,
+  `insurance_cost` DECIMAL(10,2) DEFAULT 0,
+  `additional_charges` DECIMAL(10,2) DEFAULT 0,
+  `discount` DECIMAL(10,2) DEFAULT 0,
+  `tax_rate` DECIMAL(5,2) DEFAULT 19.00,
+  `tax_amount` DECIMAL(10,2) DEFAULT 0,
+  `total_amount` DECIMAL(10,2) NOT NULL,
+  `payment_status` ENUM('pending', 'partial', 'paid', 'refunded') DEFAULT 'pending',
+  `status` ENUM('reserved', 'active', 'completed', 'cancelled') DEFAULT 'reserved',
+  `driver_name` VARCHAR(100),
+  `driver_license` VARCHAR(50),
+  `driver_phone` VARCHAR(20),
+  `notes` TEXT,
+  `created_by` INT(11) UNSIGNED,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`rate_id`) REFERENCES `rental_rates`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  KEY `idx_contract_number` (`contract_number`),
+  KEY `idx_dates` (`start_date`, `end_date`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Rental inspections (états des lieux)
+CREATE TABLE IF NOT EXISTS `rental_inspections` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `contract_id` INT(11) UNSIGNED NOT NULL,
+  `inspection_type` ENUM('pickup', 'return') NOT NULL,
+  `inspection_date` DATETIME NOT NULL,
+  `inspector_id` INT(11) UNSIGNED,
+  `exterior_condition` TEXT COMMENT 'JSON format with damages',
+  `interior_condition` TEXT COMMENT 'JSON format',
+  `tire_condition` VARCHAR(255),
+  `fuel_level` DECIMAL(5,2),
+  `mileage` INT(11),
+  `cleanliness` ENUM('excellent', 'good', 'average', 'poor'),
+  `damages` TEXT COMMENT 'List of damages',
+  `photos` TEXT COMMENT 'JSON array of photo URLs',
+  `signature` TEXT COMMENT 'Base64 signature',
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`contract_id`) REFERENCES `rental_contracts`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`inspector_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Rental payments (paiements location)
+CREATE TABLE IF NOT EXISTS `rental_payments` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `contract_id` INT(11) UNSIGNED NOT NULL,
+  `payment_date` DATE NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `payment_method` ENUM('cash', 'credit_card', 'bank_transfer', 'check') DEFAULT 'cash',
+  `reference_number` VARCHAR(50),
+  `payment_type` ENUM('deposit', 'rental', 'additional', 'refund') DEFAULT 'rental',
+  `notes` TEXT,
+  `created_by` INT(11) UNSIGNED,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`contract_id`) REFERENCES `rental_contracts`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- ADVANCED PURCHASE WORKFLOW
+-- ============================================================================
+
+-- Purchase requests (demandes d'achat)
+CREATE TABLE IF NOT EXISTS `purchase_requests` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `request_number` VARCHAR(50) UNIQUE NOT NULL,
+  `requested_by` INT(11) UNSIGNED NOT NULL,
+  `department` VARCHAR(50),
+  `priority` ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+  `request_date` DATE NOT NULL,
+  `needed_by` DATE,
+  `status` ENUM('draft', 'pending', 'approved', 'rejected', 'ordered', 'completed') DEFAULT 'draft',
+  `approved_by` INT(11) UNSIGNED,
+  `approved_date` DATE,
+  `rejection_reason` TEXT,
+  `total_amount` DECIMAL(10,2) DEFAULT 0,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`requested_by`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`approved_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Purchase request items (lignes demandes d'achat)
+CREATE TABLE IF NOT EXISTS `purchase_request_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `request_id` INT(11) UNSIGNED NOT NULL,
+  `part_id` INT(11) UNSIGNED,
+  `description` VARCHAR(255) NOT NULL,
+  `quantity` INT(11) NOT NULL,
+  `unit_price` DECIMAL(10,2),
+  `total_price` DECIMAL(10,2),
+  `notes` TEXT,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`request_id`) REFERENCES `purchase_requests`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Delivery notes (bons de livraison)
+CREATE TABLE IF NOT EXISTS `delivery_notes` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `delivery_number` VARCHAR(50) UNIQUE NOT NULL,
+  `purchase_order_id` INT(11) UNSIGNED NOT NULL,
+  `supplier_id` INT(11) UNSIGNED NOT NULL,
+  `delivery_date` DATE NOT NULL,
+  `received_by` INT(11) UNSIGNED,
+  `status` ENUM('pending', 'partial', 'complete', 'disputed') DEFAULT 'pending',
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`received_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Delivery note items (lignes bons de livraison)
+CREATE TABLE IF NOT EXISTS `delivery_note_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `delivery_note_id` INT(11) UNSIGNED NOT NULL,
+  `part_id` INT(11) UNSIGNED,
+  `description` VARCHAR(255) NOT NULL,
+  `quantity_ordered` INT(11) NOT NULL,
+  `quantity_received` INT(11) NOT NULL,
+  `unit_price` DECIMAL(10,2),
+  `condition` ENUM('good', 'damaged', 'missing') DEFAULT 'good',
+  `notes` TEXT,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`delivery_note_id`) REFERENCES `delivery_notes`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- ADVANCED STOCK MANAGEMENT
+-- ============================================================================
+
+-- Stock locations (emplacements stock)
+CREATE TABLE IF NOT EXISTS `stock_locations` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(20) UNIQUE,
+  `type` ENUM('warehouse', 'shelf', 'bin', 'vehicle') DEFAULT 'warehouse',
+  `parent_id` INT(11) UNSIGNED COMMENT 'For hierarchical locations',
+  `address` VARCHAR(255),
+  `capacity` INT(11),
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`parent_id`) REFERENCES `stock_locations`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Stock documents (bons de stock)
+CREATE TABLE IF NOT EXISTS `stock_documents` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `document_number` VARCHAR(50) UNIQUE NOT NULL,
+  `document_type` ENUM('entry', 'exit', 'transfer', 'return', 'adjustment') NOT NULL,
+  `document_date` DATE NOT NULL,
+  `source_location_id` INT(11) UNSIGNED,
+  `destination_location_id` INT(11) UNSIGNED,
+  `reference_type` VARCHAR(50) COMMENT 'work_order, purchase_order, etc.',
+  `reference_id` INT(11) UNSIGNED,
+  `requested_by` INT(11) UNSIGNED,
+  `approved_by` INT(11) UNSIGNED,
+  `status` ENUM('draft', 'pending', 'approved', 'completed', 'cancelled') DEFAULT 'draft',
+  `total_value` DECIMAL(10,2) DEFAULT 0,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`source_location_id`) REFERENCES `stock_locations`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`destination_location_id`) REFERENCES `stock_locations`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`requested_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`approved_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  KEY `idx_document_type` (`document_type`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Stock document items (lignes bons de stock)
+CREATE TABLE IF NOT EXISTS `stock_document_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `document_id` INT(11) UNSIGNED NOT NULL,
+  `part_id` INT(11) UNSIGNED NOT NULL,
+  `quantity` INT(11) NOT NULL,
+  `unit_price` DECIMAL(10,2),
+  `total_price` DECIMAL(10,2),
+  `lot_number` VARCHAR(50),
+  `expiry_date` DATE,
+  `notes` TEXT,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`document_id`) REFERENCES `stock_documents`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Physical inventories (inventaires physiques)
+CREATE TABLE IF NOT EXISTS `physical_inventories` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventory_number` VARCHAR(50) UNIQUE NOT NULL,
+  `inventory_date` DATE NOT NULL,
+  `location_id` INT(11) UNSIGNED,
+  `counted_by` INT(11) UNSIGNED,
+  `verified_by` INT(11) UNSIGNED,
+  `status` ENUM('planned', 'in_progress', 'completed', 'validated') DEFAULT 'planned',
+  `total_variance_value` DECIMAL(10,2) DEFAULT 0,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`location_id`) REFERENCES `stock_locations`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`counted_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`verified_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inventory items (lignes inventaire)
+CREATE TABLE IF NOT EXISTS `inventory_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventory_id` INT(11) UNSIGNED NOT NULL,
+  `part_id` INT(11) UNSIGNED NOT NULL,
+  `system_quantity` INT(11) NOT NULL,
+  `physical_quantity` INT(11) NOT NULL,
+  `variance` INT(11) GENERATED ALWAYS AS (`physical_quantity` - `system_quantity`) STORED,
+  `unit_price` DECIMAL(10,2),
+  `variance_value` DECIMAL(10,2),
+  `notes` TEXT,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`inventory_id`) REFERENCES `physical_inventories`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- TCO (TOTAL COST OF OWNERSHIP) MODULE
+-- ============================================================================
+
+-- TCO configurations (paramètres TCO)
+CREATE TABLE IF NOT EXISTS `tco_configurations` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `vehicle_type` VARCHAR(50) NOT NULL,
+  `depreciation_method` ENUM('linear', 'declining', 'units_of_production') DEFAULT 'linear',
+  `depreciation_years` INT(11) DEFAULT 5,
+  `residual_value_percentage` DECIMAL(5,2) DEFAULT 20.00,
+  `annual_mileage_estimate` INT(11) DEFAULT 20000,
+  `insurance_annual_cost` DECIMAL(10,2),
+  `tax_annual_cost` DECIMAL(10,2),
+  `financing_interest_rate` DECIMAL(5,2),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- TCO calculations (calculs TCO par véhicule)
+CREATE TABLE IF NOT EXISTS `tco_calculations` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `vehicle_id` INT(11) UNSIGNED NOT NULL,
+  `calculation_date` DATE NOT NULL,
+  `calculation_period` VARCHAR(20) DEFAULT 'lifetime',
+  `purchase_price` DECIMAL(10,2) NOT NULL,
+  `current_value` DECIMAL(10,2),
+  `depreciation_total` DECIMAL(10,2) DEFAULT 0,
+  `fuel_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `maintenance_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `repairs_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `insurance_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `tax_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `financing_cost_total` DECIMAL(10,2) DEFAULT 0,
+  `other_costs_total` DECIMAL(10,2) DEFAULT 0,
+  `total_cost_ownership` DECIMAL(10,2) NOT NULL,
+  `cost_per_km` DECIMAL(10,4),
+  `cost_per_day` DECIMAL(10,2),
+  `total_km` INT(11),
+  `total_days` INT(11),
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE,
+  KEY `idx_vehicle_date` (`vehicle_id`, `calculation_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- MULTI-CASH MANAGEMENT
+-- ============================================================================
+
+-- Cash registers (caisses)
+CREATE TABLE IF NOT EXISTS `cash_registers` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(20) UNIQUE NOT NULL,
+  `type` ENUM('main', 'secondary', 'petty_cash', 'mobile') DEFAULT 'secondary',
+  `currency` VARCHAR(3) DEFAULT 'TND',
+  `opening_balance` DECIMAL(10,2) DEFAULT 0,
+  `current_balance` DECIMAL(10,2) DEFAULT 0,
+  `location` VARCHAR(100),
+  `responsible_user_id` INT(11) UNSIGNED,
+  `status` ENUM('active', 'closed', 'suspended') DEFAULT 'active',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`responsible_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Cash operations (opérations de caisse)
+CREATE TABLE IF NOT EXISTS `cash_operations` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `operation_number` VARCHAR(50) UNIQUE NOT NULL,
+  `cash_register_id` INT(11) UNSIGNED NOT NULL,
+  `operation_type` ENUM('deposit', 'withdrawal', 'transfer', 'opening', 'closing') NOT NULL,
+  `operation_date` DATETIME NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `payment_method` ENUM('cash', 'check', 'card', 'transfer') DEFAULT 'cash',
+  `reference_type` VARCHAR(50) COMMENT 'invoice, expense, etc.',
+  `reference_id` INT(11) UNSIGNED,
+  `destination_register_id` INT(11) UNSIGNED COMMENT 'For transfers',
+  `description` TEXT,
+  `performed_by` INT(11) UNSIGNED,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`cash_register_id`) REFERENCES `cash_registers`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`destination_register_id`) REFERENCES `cash_registers`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`performed_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+  KEY `idx_operation_date` (`operation_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Check management (gestion chèques)
+CREATE TABLE IF NOT EXISTS `checks` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `check_number` VARCHAR(50) NOT NULL,
+  `check_type` ENUM('received', 'issued') NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `issue_date` DATE NOT NULL,
+  `due_date` DATE NOT NULL,
+  `bank_name` VARCHAR(100),
+  `account_number` VARCHAR(50),
+  `payee` VARCHAR(100),
+  `payer` VARCHAR(100),
+  `status` ENUM('pending', 'deposited', 'cashed', 'bounced', 'cancelled') DEFAULT 'pending',
+  `deposit_date` DATE,
+  `cash_date` DATE,
+  `cash_register_id` INT(11) UNSIGNED,
+  `reference_type` VARCHAR(50),
+  `reference_id` INT(11) UNSIGNED,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`cash_register_id`) REFERENCES `cash_registers`(`id`) ON DELETE SET NULL,
+  KEY `idx_status` (`status`),
+  KEY `idx_due_date` (`due_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bank reconciliation (rapprochement bancaire)
+CREATE TABLE IF NOT EXISTS `bank_reconciliations` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_id` INT(11) UNSIGNED NOT NULL,
+  `reconciliation_date` DATE NOT NULL,
+  `statement_date` DATE NOT NULL,
+  `opening_balance` DECIMAL(10,2) NOT NULL,
+  `closing_balance` DECIMAL(10,2) NOT NULL,
+  `statement_balance` DECIMAL(10,2) NOT NULL,
+  `difference` DECIMAL(10,2),
+  `status` ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+  `reconciled_by` INT(11) UNSIGNED,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`reconciled_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default data for new modules
+INSERT INTO `rental_rates` (`vehicle_type`, `rate_type`, `rate`, `deposit_amount`, `mileage_limit`, `excess_km_rate`) VALUES
+('car', 'daily', 80.00, 500.00, 150, 0.50),
+('car', 'weekly', 500.00, 500.00, 1000, 0.50),
+('car', 'monthly', 1800.00, 500.00, 3000, 0.50),
+('van', 'daily', 120.00, 800.00, 150, 0.70),
+('truck', 'daily', 200.00, 1500.00, 200, 1.00);
+
+INSERT INTO `stock_locations` (`name`, `code`, `type`) VALUES
+('Entrepôt Principal', 'WH-MAIN', 'warehouse'),
+('Atelier Mécanique', 'WH-WORKSHOP', 'warehouse'),
+('Véhicules de Service', 'VH-SERVICE', 'vehicle');
+
+INSERT INTO `cash_registers` (`name`, `code`, `type`, `opening_balance`, `current_balance`) VALUES
+('Caisse Principale', 'CASH-MAIN', 'main', 5000.00, 5000.00),
+('Caisse Secondaire', 'CASH-SEC', 'secondary', 1000.00, 1000.00),
+('Petite Caisse', 'CASH-PETTY', 'petty_cash', 500.00, 500.00);
