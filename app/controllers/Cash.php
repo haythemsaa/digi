@@ -408,7 +408,7 @@ class Cash extends Controller {
         }
 
         $data = [
-            'page_title'] = 'Bank Reconciliation Details',
+            'page_title' => 'Bank Reconciliation Details',
             'reconciliation' => $reconciliation
         ];
 
