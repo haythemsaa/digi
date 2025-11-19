@@ -1,20 +1,46 @@
 <?php
 /**
- * Cash Register Model
+ * Cash Register Model - Multi-tenant enabled
  * Manages cash registers, operations, checks, and bank reconciliations
  */
 
 class CashRegister extends Model {
+    private $companyId;
+
+    public function __construct() {
+        parent::__construct();
+        $this->companyId = getCurrentCompanyId();
+
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    private function getCompanyFilter($tableAlias = '') {
+        if (isSuperAdmin()) {
+            return '1=1';
+        }
+        $prefix = $tableAlias ? "{$tableAlias}." : '';
+        return "{$prefix}company_id = :company_id";
+    }
+
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->db->bind(':company_id', $this->companyId);
+        }
+    }
 
     /**
      * Get all cash registers
      */
     public function getAllRegisters() {
+        $companyFilter = $this->getCompanyFilter('cr');
         $this->db->query("SELECT cr.*, CONCAT(u.first_name, ' ', u.last_name) as manager_name
                          FROM cash_registers cr
                          LEFT JOIN users u ON cr.manager_id = u.id
-                         WHERE cr.is_active = 1
+                         WHERE cr.is_active = 1 AND {$companyFilter}
                          ORDER BY cr.name");
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -22,11 +48,13 @@ class CashRegister extends Model {
      * Get register by ID
      */
     public function getRegisterById($id) {
+        $companyFilter = $this->getCompanyFilter('cr');
         $this->db->query("SELECT cr.*, CONCAT(u.first_name, ' ', u.last_name) as manager_name
                          FROM cash_registers cr
                          LEFT JOIN users u ON cr.manager_id = u.id
-                         WHERE cr.id = ?");
+                         WHERE cr.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -35,22 +63,23 @@ class CashRegister extends Model {
      */
     public function createRegister($data) {
         $this->db->query("INSERT INTO cash_registers
-                         (name, type, currency, opening_balance, current_balance,
+                         (company_id, name, type, currency, opening_balance, current_balance,
                           location, manager_id, bank_name, account_number, is_active)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $openingBalance = floatval($data['opening_balance'] ?? 0);
 
-        $this->db->bind(1, $data['name']);
-        $this->db->bind(2, $data['type']);
-        $this->db->bind(3, $data['currency'] ?? 'TND');
-        $this->db->bind(4, $openingBalance);
-        $this->db->bind(5, $openingBalance); // Current balance starts as opening balance
-        $this->db->bind(6, $data['location'] ?? null);
-        $this->db->bind(7, $data['manager_id'] ?? null);
-        $this->db->bind(8, $data['bank_name'] ?? null);
-        $this->db->bind(9, $data['account_number'] ?? null);
-        $this->db->bind(10, $data['is_active'] ?? 1);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $data['name']);
+        $this->db->bind(3, $data['type']);
+        $this->db->bind(4, $data['currency'] ?? 'TND');
+        $this->db->bind(5, $openingBalance);
+        $this->db->bind(6, $openingBalance); // Current balance starts as opening balance
+        $this->db->bind(7, $data['location'] ?? null);
+        $this->db->bind(8, $data['manager_id'] ?? null);
+        $this->db->bind(9, $data['bank_name'] ?? null);
+        $this->db->bind(10, $data['account_number'] ?? null);
+        $this->db->bind(11, $data['is_active'] ?? 1);
 
         return $this->db->execute();
     }
@@ -59,11 +88,12 @@ class CashRegister extends Model {
      * Update cash register
      */
     public function updateRegister($id, $data) {
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("UPDATE cash_registers SET
                          name = ?, type = ?, currency = ?,
                          location = ?, manager_id = ?,
                          bank_name = ?, account_number = ?, is_active = ?
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
 
         $this->db->bind(1, $data['name']);
         $this->db->bind(2, $data['type']);
@@ -74,6 +104,7 @@ class CashRegister extends Model {
         $this->db->bind(7, $data['account_number'] ?? null);
         $this->db->bind(8, $data['is_active'] ?? 1);
         $this->db->bind(9, $id);
+        $this->bindCompanyId();
 
         return $this->db->execute();
     }
@@ -82,9 +113,11 @@ class CashRegister extends Model {
      * Update register balance
      */
     private function updateRegisterBalance($registerId, $amount) {
-        $this->db->query("UPDATE cash_registers SET current_balance = current_balance + ? WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE cash_registers SET current_balance = current_balance + ? WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $amount);
         $this->db->bind(2, $registerId);
+        $this->bindCompanyId();
         return $this->db->execute();
     }
 
@@ -94,6 +127,7 @@ class CashRegister extends Model {
      * Get all cash operations
      */
     public function getAllOperations($filters = []) {
+        $companyFilter = $this->getCompanyFilter('co');
         $sql = "SELECT co.*,
                        cr.name as register_name, cr.type as register_type,
                        CONCAT(u.first_name, ' ', u.last_name) as user_name,
@@ -104,7 +138,7 @@ class CashRegister extends Model {
                 LEFT JOIN users u ON co.user_id = u.id
                 LEFT JOIN clients c ON co.client_id = c.id
                 LEFT JOIN suppliers s ON co.supplier_id = s.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -136,6 +170,7 @@ class CashRegister extends Model {
         $sql .= " ORDER BY co.operation_date DESC, co.created_at DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -149,6 +184,7 @@ class CashRegister extends Model {
      * Get operation by ID
      */
     public function getOperationById($id) {
+        $companyFilter = $this->getCompanyFilter('co');
         $this->db->query("SELECT co.*,
                                  cr.name as register_name, cr.type as register_type,
                                  CONCAT(u.first_name, ' ', u.last_name) as user_name,
@@ -159,8 +195,9 @@ class CashRegister extends Model {
                           LEFT JOIN users u ON co.user_id = u.id
                           LEFT JOIN clients c ON co.client_id = c.id
                           LEFT JOIN suppliers s ON co.supplier_id = s.id
-                          WHERE co.id = ?");
+                          WHERE co.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -172,26 +209,27 @@ class CashRegister extends Model {
         $operationNumber = $this->generateOperationNumber($data['operation_type']);
 
         $this->db->query("INSERT INTO cash_operations
-                         (operation_number, register_id, operation_type, operation_date,
+                         (company_id, operation_number, register_id, operation_type, operation_date,
                           category, amount, payment_method, reference,
                           client_id, supplier_id, vehicle_id,
                           description, notes, user_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $operationNumber);
-        $this->db->bind(2, $data['register_id']);
-        $this->db->bind(3, $data['operation_type']);
-        $this->db->bind(4, $data['operation_date'] ?? date('Y-m-d'));
-        $this->db->bind(5, $data['category']);
-        $this->db->bind(6, $data['amount']);
-        $this->db->bind(7, $data['payment_method'] ?? 'cash');
-        $this->db->bind(8, $data['reference'] ?? null);
-        $this->db->bind(9, $data['client_id'] ?? null);
-        $this->db->bind(10, $data['supplier_id'] ?? null);
-        $this->db->bind(11, $data['vehicle_id'] ?? null);
-        $this->db->bind(12, $data['description'] ?? null);
-        $this->db->bind(13, $data['notes'] ?? null);
-        $this->db->bind(14, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $operationNumber);
+        $this->db->bind(3, $data['register_id']);
+        $this->db->bind(4, $data['operation_type']);
+        $this->db->bind(5, $data['operation_date'] ?? date('Y-m-d'));
+        $this->db->bind(6, $data['category']);
+        $this->db->bind(7, $data['amount']);
+        $this->db->bind(8, $data['payment_method'] ?? 'cash');
+        $this->db->bind(9, $data['reference'] ?? null);
+        $this->db->bind(10, $data['client_id'] ?? null);
+        $this->db->bind(11, $data['supplier_id'] ?? null);
+        $this->db->bind(12, $data['vehicle_id'] ?? null);
+        $this->db->bind(13, $data['description'] ?? null);
+        $this->db->bind(14, $data['notes'] ?? null);
+        $this->db->bind(15, $_SESSION['user_id'] ?? null);
 
         if ($this->db->execute()) {
             // Update register balance
@@ -211,13 +249,15 @@ class CashRegister extends Model {
      * Generate operation number
      */
     private function generateOperationNumber($type) {
+        $companyFilter = $this->getCompanyFilter('');
         $year = date('Y');
         $prefix = ($type == 'income' ? 'IN' : 'OUT') . '-' . $year . '-';
 
         $this->db->query("SELECT operation_number FROM cash_operations
-                         WHERE operation_number LIKE ?
+                         WHERE operation_number LIKE ? AND {$companyFilter}
                          ORDER BY operation_number DESC LIMIT 1");
         $this->db->bind(1, $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->db->single();
 
         if ($result) {
@@ -251,20 +291,21 @@ class CashRegister extends Model {
         ];
 
         $this->db->query("INSERT INTO cash_operations
-                         (operation_number, register_id, operation_type, operation_date,
+                         (company_id, operation_number, register_id, operation_type, operation_date,
                           category, amount, payment_method, reference, description, user_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $expenseData['operation_number']);
-        $this->db->bind(2, $expenseData['register_id']);
-        $this->db->bind(3, $expenseData['operation_type']);
-        $this->db->bind(4, $expenseData['operation_date']);
-        $this->db->bind(5, $expenseData['category']);
-        $this->db->bind(6, $expenseData['amount']);
-        $this->db->bind(7, $expenseData['payment_method']);
-        $this->db->bind(8, $expenseData['reference']);
-        $this->db->bind(9, $expenseData['description']);
-        $this->db->bind(10, $expenseData['user_id']);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $expenseData['operation_number']);
+        $this->db->bind(3, $expenseData['register_id']);
+        $this->db->bind(4, $expenseData['operation_type']);
+        $this->db->bind(5, $expenseData['operation_date']);
+        $this->db->bind(6, $expenseData['category']);
+        $this->db->bind(7, $expenseData['amount']);
+        $this->db->bind(8, $expenseData['payment_method']);
+        $this->db->bind(9, $expenseData['reference']);
+        $this->db->bind(10, $expenseData['description']);
+        $this->db->bind(11, $expenseData['user_id']);
 
         if (!$this->db->execute()) {
             return false;
@@ -285,20 +326,21 @@ class CashRegister extends Model {
         ];
 
         $this->db->query("INSERT INTO cash_operations
-                         (operation_number, register_id, operation_type, operation_date,
+                         (company_id, operation_number, register_id, operation_type, operation_date,
                           category, amount, payment_method, reference, description, user_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $incomeData['operation_number']);
-        $this->db->bind(2, $incomeData['register_id']);
-        $this->db->bind(3, $incomeData['operation_type']);
-        $this->db->bind(4, $incomeData['operation_date']);
-        $this->db->bind(5, $incomeData['category']);
-        $this->db->bind(6, $incomeData['amount']);
-        $this->db->bind(7, $incomeData['payment_method']);
-        $this->db->bind(8, $incomeData['reference']);
-        $this->db->bind(9, $incomeData['description']);
-        $this->db->bind(10, $incomeData['user_id']);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $incomeData['operation_number']);
+        $this->db->bind(3, $incomeData['register_id']);
+        $this->db->bind(4, $incomeData['operation_type']);
+        $this->db->bind(5, $incomeData['operation_date']);
+        $this->db->bind(6, $incomeData['category']);
+        $this->db->bind(7, $incomeData['amount']);
+        $this->db->bind(8, $incomeData['payment_method']);
+        $this->db->bind(9, $incomeData['reference']);
+        $this->db->bind(10, $incomeData['description']);
+        $this->db->bind(11, $incomeData['user_id']);
 
         if (!$this->db->execute()) {
             return false;
@@ -317,6 +359,7 @@ class CashRegister extends Model {
      * Get all checks
      */
     public function getAllChecks($filters = []) {
+        $companyFilter = $this->getCompanyFilter('ch');
         $sql = "SELECT ch.*,
                        cr.name as register_name,
                        CONCAT(u.first_name, ' ', u.last_name) as user_name,
@@ -327,7 +370,7 @@ class CashRegister extends Model {
                 LEFT JOIN users u ON ch.user_id = u.id
                 LEFT JOIN clients c ON ch.client_id = c.id
                 LEFT JOIN suppliers s ON ch.supplier_id = s.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -349,6 +392,7 @@ class CashRegister extends Model {
         $sql .= " ORDER BY ch.issue_date DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -362,6 +406,7 @@ class CashRegister extends Model {
      * Get check by ID
      */
     public function getCheckById($id) {
+        $companyFilter = $this->getCompanyFilter('ch');
         $this->db->query("SELECT ch.*,
                                  cr.name as register_name,
                                  CONCAT(u.first_name, ' ', u.last_name) as user_name,
@@ -372,8 +417,9 @@ class CashRegister extends Model {
                           LEFT JOIN users u ON ch.user_id = u.id
                           LEFT JOIN clients c ON ch.client_id = c.id
                           LEFT JOIN suppliers s ON ch.supplier_id = s.id
-                          WHERE ch.id = ?");
+                          WHERE ch.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -382,24 +428,25 @@ class CashRegister extends Model {
      */
     public function addCheck($data) {
         $this->db->query("INSERT INTO checks
-                         (register_id, check_type, check_number, amount,
+                         (company_id, register_id, check_type, check_number, amount,
                           issue_date, due_date, bank_name, drawer_name,
                           client_id, supplier_id, status, notes, user_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $data['register_id']);
-        $this->db->bind(2, $data['check_type']);
-        $this->db->bind(3, $data['check_number']);
-        $this->db->bind(4, $data['amount']);
-        $this->db->bind(5, $data['issue_date']);
-        $this->db->bind(6, $data['due_date']);
-        $this->db->bind(7, $data['bank_name'] ?? null);
-        $this->db->bind(8, $data['drawer_name'] ?? null);
-        $this->db->bind(9, $data['client_id'] ?? null);
-        $this->db->bind(10, $data['supplier_id'] ?? null);
-        $this->db->bind(11, $data['status'] ?? 'pending');
-        $this->db->bind(12, $data['notes'] ?? null);
-        $this->db->bind(13, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $data['register_id']);
+        $this->db->bind(3, $data['check_type']);
+        $this->db->bind(4, $data['check_number']);
+        $this->db->bind(5, $data['amount']);
+        $this->db->bind(6, $data['issue_date']);
+        $this->db->bind(7, $data['due_date']);
+        $this->db->bind(8, $data['bank_name'] ?? null);
+        $this->db->bind(9, $data['drawer_name'] ?? null);
+        $this->db->bind(10, $data['client_id'] ?? null);
+        $this->db->bind(11, $data['supplier_id'] ?? null);
+        $this->db->bind(12, $data['status'] ?? 'pending');
+        $this->db->bind(13, $data['notes'] ?? null);
+        $this->db->bind(14, $_SESSION['user_id'] ?? null);
 
         return $this->db->execute();
     }
@@ -408,10 +455,12 @@ class CashRegister extends Model {
      * Update check status
      */
     public function updateCheckStatus($id, $status, $depositDate = null) {
-        $this->db->query("UPDATE checks SET status = ?, deposit_date = ? WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE checks SET status = ?, deposit_date = ? WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $status);
         $this->db->bind(2, $depositDate);
         $this->db->bind(3, $id);
+        $this->bindCompanyId();
 
         if ($this->db->execute()) {
             // If check is cashed/deposited, create cash operation
@@ -448,13 +497,14 @@ class CashRegister extends Model {
      * Get all reconciliations
      */
     public function getAllReconciliations($filters = []) {
+        $companyFilter = $this->getCompanyFilter('br');
         $sql = "SELECT br.*,
                        cr.name as register_name,
                        CONCAT(u.first_name, ' ', u.last_name) as user_name
                 FROM bank_reconciliations br
                 LEFT JOIN cash_registers cr ON br.register_id = cr.id
                 LEFT JOIN users u ON br.user_id = u.id
-                WHERE cr.type = 'bank'";
+                WHERE cr.type = 'bank' AND {$companyFilter}";
 
         $params = [];
 
@@ -471,6 +521,7 @@ class CashRegister extends Model {
         $sql .= " ORDER BY br.reconciliation_date DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -484,14 +535,16 @@ class CashRegister extends Model {
      * Get reconciliation by ID
      */
     public function getReconciliationById($id) {
+        $companyFilter = $this->getCompanyFilter('br');
         $this->db->query("SELECT br.*,
                                  cr.name as register_name,
                                  CONCAT(u.first_name, ' ', u.last_name) as user_name
                           FROM bank_reconciliations br
                           LEFT JOIN cash_registers cr ON br.register_id = cr.id
                           LEFT JOIN users u ON br.user_id = u.id
-                          WHERE br.id = ?");
+                          WHERE br.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -504,23 +557,24 @@ class CashRegister extends Model {
         $difference = $bankBalance - $systemBalance;
 
         $this->db->query("INSERT INTO bank_reconciliations
-                         (register_id, reconciliation_date, statement_date,
+                         (company_id, register_id, reconciliation_date, statement_date,
                           system_balance, bank_balance, difference,
                           outstanding_checks, deposits_in_transit,
                           bank_fees, notes, status, user_id)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
 
-        $this->db->bind(1, $data['register_id']);
-        $this->db->bind(2, $data['reconciliation_date']);
-        $this->db->bind(3, $data['statement_date']);
-        $this->db->bind(4, $systemBalance);
-        $this->db->bind(5, $bankBalance);
-        $this->db->bind(6, $difference);
-        $this->db->bind(7, $data['outstanding_checks'] ?? 0);
-        $this->db->bind(8, $data['deposits_in_transit'] ?? 0);
-        $this->db->bind(9, $data['bank_fees'] ?? 0);
-        $this->db->bind(10, $data['notes'] ?? null);
-        $this->db->bind(11, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $data['register_id']);
+        $this->db->bind(3, $data['reconciliation_date']);
+        $this->db->bind(4, $data['statement_date']);
+        $this->db->bind(5, $systemBalance);
+        $this->db->bind(6, $bankBalance);
+        $this->db->bind(7, $difference);
+        $this->db->bind(8, $data['outstanding_checks'] ?? 0);
+        $this->db->bind(9, $data['deposits_in_transit'] ?? 0);
+        $this->db->bind(10, $data['bank_fees'] ?? 0);
+        $this->db->bind(11, $data['notes'] ?? null);
+        $this->db->bind(12, $_SESSION['user_id'] ?? null);
 
         return $this->db->execute();
     }
@@ -529,8 +583,10 @@ class CashRegister extends Model {
      * Complete reconciliation
      */
     public function completeReconciliation($id) {
-        $this->db->query("UPDATE bank_reconciliations SET status = 'completed' WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE bank_reconciliations SET status = 'completed' WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->execute();
     }
 
@@ -538,16 +594,19 @@ class CashRegister extends Model {
      * Get register cash flow
      */
     public function getRegisterCashFlow($registerId, $fromDate, $toDate) {
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("SELECT
                              SUM(CASE WHEN operation_type = 'income' THEN amount ELSE 0 END) as total_income,
                              SUM(CASE WHEN operation_type = 'expense' THEN amount ELSE 0 END) as total_expense,
                              COUNT(*) as operation_count
                           FROM cash_operations
                           WHERE register_id = ?
-                          AND operation_date BETWEEN ? AND ?");
+                          AND operation_date BETWEEN ? AND ?
+                          AND {$companyFilter}");
         $this->db->bind(1, $registerId);
         $this->db->bind(2, $fromDate);
         $this->db->bind(3, $toDate);
+        $this->bindCompanyId();
 
         return $this->db->single();
     }
@@ -556,26 +615,30 @@ class CashRegister extends Model {
      * Get cash statistics
      */
     public function getCashStats() {
+        $companyFilter = $this->getCompanyFilter('');
         $stats = [];
 
         // Total cash balance
         $this->db->query("SELECT SUM(current_balance) as total
                          FROM cash_registers
-                         WHERE type = 'cash' AND is_active = 1");
+                         WHERE type = 'cash' AND is_active = 1 AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['total_cash'] = $result['total'] ?? 0;
 
         // Total bank balance
         $this->db->query("SELECT SUM(current_balance) as total
                          FROM cash_registers
-                         WHERE type = 'bank' AND is_active = 1");
+                         WHERE type = 'bank' AND is_active = 1 AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['total_bank'] = $result['total'] ?? 0;
 
         // Pending checks
         $this->db->query("SELECT COUNT(*) as count, SUM(amount) as total
                          FROM checks
-                         WHERE status = 'pending'");
+                         WHERE status = 'pending' AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['pending_checks_count'] = $result['count'];
         $stats['pending_checks_amount'] = $result['total'] ?? 0;
@@ -584,7 +647,9 @@ class CashRegister extends Model {
         $this->db->query("SELECT SUM(amount) as total
                          FROM cash_operations
                          WHERE operation_type = 'income'
-                         AND operation_date = CURRENT_DATE");
+                         AND operation_date = CURRENT_DATE
+                         AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['today_income'] = $result['total'] ?? 0;
 
@@ -592,7 +657,9 @@ class CashRegister extends Model {
         $this->db->query("SELECT SUM(amount) as total
                          FROM cash_operations
                          WHERE operation_type = 'expense'
-                         AND operation_date = CURRENT_DATE");
+                         AND operation_date = CURRENT_DATE
+                         AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['today_expense'] = $result['total'] ?? 0;
 

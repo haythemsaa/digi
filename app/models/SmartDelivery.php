@@ -1,10 +1,34 @@
 <?php
 /**
- * Smart Delivery Model
+ * Smart Delivery Model - Multi-tenant enabled
  * AI-powered delivery optimization with 3D bin packing and route optimization
  */
 
 class SmartDelivery extends Model {
+    private $companyId;
+
+    public function __construct() {
+        parent::__construct();
+        $this->companyId = getCurrentCompanyId();
+
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    private function getCompanyFilter($tableAlias = '') {
+        if (isSuperAdmin()) {
+            return '1=1';
+        }
+        $prefix = $tableAlias ? "{$tableAlias}." : '';
+        return "{$prefix}company_id = :company_id";
+    }
+
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->db->bind(':company_id', $this->companyId);
+        }
+    }
 
     // ==================== PACKAGES ====================
 
@@ -12,10 +36,11 @@ class SmartDelivery extends Model {
      * Get all packages
      */
     public function getAllPackages($filters = []) {
+        $companyFilter = $this->getCompanyFilter('p');
         $sql = "SELECT p.*, c.name as client_name
                 FROM packages p
                 LEFT JOIN clients c ON p.client_id = c.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -32,6 +57,7 @@ class SmartDelivery extends Model {
         $sql .= " ORDER BY p.created_at DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -45,11 +71,13 @@ class SmartDelivery extends Model {
      * Get package by ID
      */
     public function getPackageById($id) {
+        $companyFilter = $this->getCompanyFilter('p');
         $this->db->query("SELECT p.*, c.name as client_name, c.phone as client_phone
                          FROM packages p
                          LEFT JOIN clients c ON p.client_id = c.id
-                         WHERE p.id = ?");
+                         WHERE p.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -64,35 +92,36 @@ class SmartDelivery extends Model {
         $volume = ($data['length'] * $data['width'] * $data['height']) / 1000000;
 
         $this->db->query("INSERT INTO packages
-                         (package_number, client_id, order_number, description,
+                         (company_id, package_number, client_id, order_number, description,
                           weight, length, width, height, volume,
                           is_fragile, is_stackable, rotation_allowed, priority,
                           delivery_address, delivery_lat, delivery_lng,
                           delivery_contact, delivery_phone, delivery_notes,
                           time_window_start, time_window_end, status)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
 
-        $this->db->bind(1, $packageNumber);
-        $this->db->bind(2, $data['client_id'] ?? null);
-        $this->db->bind(3, $data['order_number'] ?? null);
-        $this->db->bind(4, $data['description']);
-        $this->db->bind(5, $data['weight']);
-        $this->db->bind(6, $data['length']);
-        $this->db->bind(7, $data['width']);
-        $this->db->bind(8, $data['height']);
-        $this->db->bind(9, $volume);
-        $this->db->bind(10, $data['is_fragile'] ?? 0);
-        $this->db->bind(11, $data['is_stackable'] ?? 1);
-        $this->db->bind(12, $data['rotation_allowed'] ?? 1);
-        $this->db->bind(13, $data['priority'] ?? 'normal');
-        $this->db->bind(14, $data['delivery_address']);
-        $this->db->bind(15, $data['delivery_lat'] ?? null);
-        $this->db->bind(16, $data['delivery_lng'] ?? null);
-        $this->db->bind(17, $data['delivery_contact'] ?? null);
-        $this->db->bind(18, $data['delivery_phone'] ?? null);
-        $this->db->bind(19, $data['delivery_notes'] ?? null);
-        $this->db->bind(20, $data['time_window_start'] ?? null);
-        $this->db->bind(21, $data['time_window_end'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $packageNumber);
+        $this->db->bind(3, $data['client_id'] ?? null);
+        $this->db->bind(4, $data['order_number'] ?? null);
+        $this->db->bind(5, $data['description']);
+        $this->db->bind(6, $data['weight']);
+        $this->db->bind(7, $data['length']);
+        $this->db->bind(8, $data['width']);
+        $this->db->bind(9, $data['height']);
+        $this->db->bind(10, $volume);
+        $this->db->bind(11, $data['is_fragile'] ?? 0);
+        $this->db->bind(12, $data['is_stackable'] ?? 1);
+        $this->db->bind(13, $data['rotation_allowed'] ?? 1);
+        $this->db->bind(14, $data['priority'] ?? 'normal');
+        $this->db->bind(15, $data['delivery_address']);
+        $this->db->bind(16, $data['delivery_lat'] ?? null);
+        $this->db->bind(17, $data['delivery_lng'] ?? null);
+        $this->db->bind(18, $data['delivery_contact'] ?? null);
+        $this->db->bind(19, $data['delivery_phone'] ?? null);
+        $this->db->bind(20, $data['delivery_notes'] ?? null);
+        $this->db->bind(21, $data['time_window_start'] ?? null);
+        $this->db->bind(22, $data['time_window_end'] ?? null);
 
         if ($this->db->execute()) {
             return $this->db->lastInsertId();
@@ -104,14 +133,16 @@ class SmartDelivery extends Model {
      * Generate unique package number
      */
     private function generatePackageNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $year = date('Y');
         $month = date('m');
         $prefix = 'PKG-' . $year . $month . '-';
 
         $this->db->query("SELECT package_number FROM packages
-                         WHERE package_number LIKE ?
+                         WHERE package_number LIKE ? AND {$companyFilter}
                          ORDER BY package_number DESC LIMIT 1");
         $this->db->bind(1, $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->db->single();
 
         if ($result) {
@@ -128,7 +159,9 @@ class SmartDelivery extends Model {
      * Get pending packages for route planning
      */
     public function getPendingPackages() {
-        $this->db->query("SELECT * FROM packages WHERE status = 'pending' ORDER BY priority DESC, created_at ASC");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("SELECT * FROM packages WHERE status = 'pending' AND {$companyFilter} ORDER BY priority DESC, created_at ASC");
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -138,13 +171,14 @@ class SmartDelivery extends Model {
      * Get all routes
      */
     public function getAllRoutes($filters = []) {
+        $companyFilter = $this->getCompanyFilter('dr');
         $sql = "SELECT dr.*,
                        v.registration_number, v.make, v.model,
                        CONCAT(u.first_name, ' ', u.last_name) as driver_name
                 FROM delivery_routes dr
                 LEFT JOIN vehicles v ON dr.vehicle_id = v.id
                 LEFT JOIN users u ON dr.driver_id = u.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -161,6 +195,7 @@ class SmartDelivery extends Model {
         $sql .= " ORDER BY dr.route_date DESC, dr.created_at DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -174,6 +209,7 @@ class SmartDelivery extends Model {
      * Get route by ID with all details
      */
     public function getRouteById($id) {
+        $companyFilter = $this->getCompanyFilter('dr');
         $this->db->query("SELECT dr.*,
                                  v.registration_number, v.make, v.model,
                                  CONCAT(u.first_name, ' ', u.last_name) as driver_name,
@@ -182,8 +218,9 @@ class SmartDelivery extends Model {
                           LEFT JOIN vehicles v ON dr.vehicle_id = v.id
                           LEFT JOIN users u ON dr.driver_id = u.id
                           LEFT JOIN vehicle_delivery_capacity vdc ON v.id = vdc.vehicle_id
-                          WHERE dr.id = ?");
+                          WHERE dr.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         $route = $this->db->single();
 
         if ($route) {
@@ -203,19 +240,20 @@ class SmartDelivery extends Model {
         $routeNumber = $this->generateRouteNumber();
 
         $this->db->query("INSERT INTO delivery_routes
-                         (route_number, vehicle_id, driver_id, route_date,
+                         (company_id, route_number, vehicle_id, driver_id, route_date,
                           start_location, start_lat, start_lng,
                           status, created_by)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
 
-        $this->db->bind(1, $routeNumber);
-        $this->db->bind(2, $data['vehicle_id']);
-        $this->db->bind(3, $data['driver_id'] ?? null);
-        $this->db->bind(4, $data['route_date']);
-        $this->db->bind(5, $data['start_location'] ?? 'Warehouse');
-        $this->db->bind(6, $data['start_lat'] ?? null);
-        $this->db->bind(7, $data['start_lng'] ?? null);
-        $this->db->bind(8, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $routeNumber);
+        $this->db->bind(3, $data['vehicle_id']);
+        $this->db->bind(4, $data['driver_id'] ?? null);
+        $this->db->bind(5, $data['route_date']);
+        $this->db->bind(6, $data['start_location'] ?? 'Warehouse');
+        $this->db->bind(7, $data['start_lat'] ?? null);
+        $this->db->bind(8, $data['start_lng'] ?? null);
+        $this->db->bind(9, $_SESSION['user_id'] ?? null);
 
         if ($this->db->execute()) {
             return $this->db->lastInsertId();
@@ -227,15 +265,17 @@ class SmartDelivery extends Model {
      * Generate route number
      */
     private function generateRouteNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $year = date('Y');
         $month = date('m');
         $day = date('d');
         $prefix = 'RT-' . $year . $month . $day . '-';
 
         $this->db->query("SELECT route_number FROM delivery_routes
-                         WHERE route_number LIKE ?
+                         WHERE route_number LIKE ? AND {$companyFilter}
                          ORDER BY route_number DESC LIMIT 1");
         $this->db->bind(1, $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->db->single();
 
         if ($result) {
@@ -252,13 +292,15 @@ class SmartDelivery extends Model {
      * Get route stops
      */
     public function getRouteStops($routeId) {
+        $companyFilter = $this->getCompanyFilter('ds');
         $this->db->query("SELECT ds.*, p.package_number, p.description, p.weight,
                                  p.delivery_contact, p.delivery_phone
                          FROM delivery_stops ds
                          LEFT JOIN packages p ON ds.package_id = p.id
-                         WHERE ds.route_id = ?
+                         WHERE ds.route_id = ? AND {$companyFilter}
                          ORDER BY ds.stop_sequence ASC");
         $this->db->bind(1, $routeId);
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -270,21 +312,24 @@ class SmartDelivery extends Model {
         $package = $this->getPackageById($packageId);
 
         $this->db->query("INSERT INTO delivery_stops
-                         (route_id, package_id, stop_sequence, address,
+                         (company_id, route_id, package_id, stop_sequence, address,
                           latitude, longitude, service_time, status)
-                         VALUES (?, ?, ?, ?, ?, ?, 10, 'pending')");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 10, 'pending')");
 
-        $this->db->bind(1, $routeId);
-        $this->db->bind(2, $packageId);
-        $this->db->bind(3, $sequence);
-        $this->db->bind(4, $package['delivery_address']);
-        $this->db->bind(5, $package['delivery_lat']);
-        $this->db->bind(6, $package['delivery_lng']);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $routeId);
+        $this->db->bind(3, $packageId);
+        $this->db->bind(4, $sequence);
+        $this->db->bind(5, $package['delivery_address']);
+        $this->db->bind(6, $package['delivery_lat']);
+        $this->db->bind(7, $package['delivery_lng']);
 
         if ($this->db->execute()) {
             // Update package status
-            $this->db->query("UPDATE packages SET status = 'assigned' WHERE id = ?");
+            $companyFilter = $this->getCompanyFilter('');
+            $this->db->query("UPDATE packages SET status = 'assigned' WHERE id = ? AND {$companyFilter}");
             $this->db->bind(1, $packageId);
+            $this->bindCompanyId();
             $this->db->execute();
 
             return true;
@@ -322,28 +367,31 @@ class SmartDelivery extends Model {
         $computationTime = microtime(true) - $startTime;
 
         // Update stop sequences
+        $companyFilter = $this->getCompanyFilter('');
         foreach ($optimizedStops as $index => $stop) {
-            $this->db->query("UPDATE delivery_stops SET stop_sequence = ? WHERE id = ?");
+            $this->db->query("UPDATE delivery_stops SET stop_sequence = ? WHERE id = ? AND {$companyFilter}");
             $this->db->bind(1, $index + 1);
             $this->db->bind(2, $stop['id']);
+            $this->bindCompanyId();
             $this->db->execute();
         }
 
         // Save optimization record
         $this->db->query("INSERT INTO route_optimizations
-                         (route_id, optimization_type, algorithm, initial_distance,
+                         (company_id, route_id, optimization_type, algorithm, initial_distance,
                           optimized_distance, distance_saved, percentage_improvement,
                           computation_time, parameters)
-                         VALUES (?, 'vrptw', ?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, 'vrptw', ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $routeId);
-        $this->db->bind(2, $params['algorithm']);
-        $this->db->bind(3, $initialDistance);
-        $this->db->bind(4, $optimizedDistance);
-        $this->db->bind(5, $distanceSaved);
-        $this->db->bind(6, $improvement);
-        $this->db->bind(7, $computationTime);
-        $this->db->bind(8, json_encode($params));
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $routeId);
+        $this->db->bind(3, $params['algorithm']);
+        $this->db->bind(4, $initialDistance);
+        $this->db->bind(5, $optimizedDistance);
+        $this->db->bind(6, $distanceSaved);
+        $this->db->bind(7, $improvement);
+        $this->db->bind(8, $computationTime);
+        $this->db->bind(9, json_encode($params));
         $this->db->execute();
 
         // Update route metrics
@@ -351,10 +399,11 @@ class SmartDelivery extends Model {
                          SET total_distance = ?,
                              route_efficiency = ?,
                              status = 'optimized'
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $optimizedDistance);
         $this->db->bind(2, $improvement);
         $this->db->bind(3, $routeId);
+        $this->bindCompanyId();
         $this->db->execute();
 
         return [
@@ -562,18 +611,19 @@ class SmartDelivery extends Model {
         $planNumber = 'LP-' . date('Ymd') . '-' . str_pad($routeId, 4, '0', STR_PAD_LEFT);
 
         $this->db->query("INSERT INTO loading_plans
-                         (route_id, plan_number, algorithm_used, computation_time,
+                         (company_id, route_id, plan_number, algorithm_used, computation_time,
                           space_utilization, total_packages_fitted, total_packages_planned,
                           is_valid)
-                         VALUES (?, ?, 'bin_packing_3d', ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, 'bin_packing_3d', ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $routeId);
-        $this->db->bind(2, $planNumber);
-        $this->db->bind(3, $computationTime);
-        $this->db->bind(4, $result['space_utilization']);
-        $this->db->bind(5, $result['fitted_count']);
-        $this->db->bind(6, count($packages));
-        $this->db->bind(7, $result['fitted_count'] == count($packages) ? 1 : 0);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $routeId);
+        $this->db->bind(3, $planNumber);
+        $this->db->bind(4, $computationTime);
+        $this->db->bind(5, $result['space_utilization']);
+        $this->db->bind(6, $result['fitted_count']);
+        $this->db->bind(7, count($packages));
+        $this->db->bind(8, $result['fitted_count'] == count($packages) ? 1 : 0);
         $this->db->execute();
 
         $loadingPlanId = $this->db->lastInsertId();
@@ -581,29 +631,32 @@ class SmartDelivery extends Model {
         // Save loading instructions
         foreach ($result['placements'] as $index => $placement) {
             $this->db->query("INSERT INTO loading_instructions
-                             (loading_plan_id, package_id, load_sequence,
+                             (company_id, loading_plan_id, package_id, load_sequence,
                               position_x, position_y, position_z, rotation,
                               instruction_text, warnings)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-            $this->db->bind(1, $loadingPlanId);
-            $this->db->bind(2, $placement['package_id']);
-            $this->db->bind(3, $index + 1);
-            $this->db->bind(4, $placement['x']);
-            $this->db->bind(5, $placement['y']);
-            $this->db->bind(6, $placement['z']);
-            $this->db->bind(7, $placement['rotation']);
-            $this->db->bind(8, $placement['instruction']);
-            $this->db->bind(9, $placement['warnings']);
+            $this->db->bind(1, $this->companyId);
+            $this->db->bind(2, $loadingPlanId);
+            $this->db->bind(3, $placement['package_id']);
+            $this->db->bind(4, $index + 1);
+            $this->db->bind(5, $placement['x']);
+            $this->db->bind(6, $placement['y']);
+            $this->db->bind(7, $placement['z']);
+            $this->db->bind(8, $placement['rotation']);
+            $this->db->bind(9, $placement['instruction']);
+            $this->db->bind(10, $placement['warnings']);
             $this->db->execute();
         }
 
         // Update route loading efficiency
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("UPDATE delivery_routes
                          SET loading_efficiency = ?
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $result['space_utilization']);
         $this->db->bind(2, $routeId);
+        $this->bindCompanyId();
         $this->db->execute();
 
         return array_merge(['success' => true], $result);
@@ -701,8 +754,10 @@ class SmartDelivery extends Model {
      * Get loading plan for route
      */
     public function getLoadingPlan($routeId) {
-        $this->db->query("SELECT * FROM loading_plans WHERE route_id = ? ORDER BY created_at DESC LIMIT 1");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("SELECT * FROM loading_plans WHERE route_id = ? AND {$companyFilter} ORDER BY created_at DESC LIMIT 1");
         $this->db->bind(1, $routeId);
+        $this->bindCompanyId();
         $plan = $this->db->single();
 
         if ($plan) {
@@ -716,13 +771,15 @@ class SmartDelivery extends Model {
      * Get loading instructions
      */
     public function getLoadingInstructions($planId) {
+        $companyFilter = $this->getCompanyFilter('li');
         $this->db->query("SELECT li.*, p.package_number, p.description, p.weight,
                                  p.length, p.width, p.height
                          FROM loading_instructions li
                          LEFT JOIN packages p ON li.package_id = p.id
-                         WHERE li.loading_plan_id = ?
+                         WHERE li.loading_plan_id = ? AND {$companyFilter}
                          ORDER BY li.load_sequence ASC");
         $this->db->bind(1, $planId);
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -730,10 +787,12 @@ class SmartDelivery extends Model {
      * Get AI settings
      */
     private function getAISettings($type) {
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("SELECT * FROM ai_optimization_settings
-                         WHERE algorithm_type = ? AND is_active = 1
+                         WHERE algorithm_type = ? AND is_active = 1 AND {$companyFilter}
                          ORDER BY created_at DESC LIMIT 1");
         $this->db->bind(1, $type);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -741,25 +800,30 @@ class SmartDelivery extends Model {
      * Get delivery statistics
      */
     public function getDeliveryStats() {
+        $companyFilter = $this->getCompanyFilter('');
         $stats = [];
 
         // Pending packages
-        $this->db->query("SELECT COUNT(*) as count FROM packages WHERE status = 'pending'");
+        $this->db->query("SELECT COUNT(*) as count FROM packages WHERE status = 'pending' AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['pending_packages'] = $result['count'];
 
         // Active routes
-        $this->db->query("SELECT COUNT(*) as count FROM delivery_routes WHERE status IN ('assigned', 'loading', 'in_progress')");
+        $this->db->query("SELECT COUNT(*) as count FROM delivery_routes WHERE status IN ('assigned', 'loading', 'in_progress') AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['active_routes'] = $result['count'];
 
         // Today's deliveries
-        $this->db->query("SELECT COUNT(*) as count FROM delivery_stops WHERE status = 'delivered' AND DATE(actual_arrival) = CURRENT_DATE");
+        $this->db->query("SELECT COUNT(*) as count FROM delivery_stops WHERE status = 'delivered' AND DATE(actual_arrival) = CURRENT_DATE AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['today_deliveries'] = $result['count'];
 
         // Average route efficiency
-        $this->db->query("SELECT AVG(route_efficiency) as avg FROM delivery_routes WHERE status = 'completed'");
+        $this->db->query("SELECT AVG(route_efficiency) as avg FROM delivery_routes WHERE status = 'completed' AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['avg_route_efficiency'] = round($result['avg'] ?? 0, 2);
 

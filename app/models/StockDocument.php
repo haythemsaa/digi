@@ -1,16 +1,42 @@
 <?php
 /**
- * Stock Document Model
+ * Stock Document Model - Multi-tenant enabled
  * Manages advanced stock operations with formal documents
  */
 
 class StockDocument extends Model {
+    private $companyId;
+
+    public function __construct() {
+        parent::__construct();
+        $this->companyId = getCurrentCompanyId();
+
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    private function getCompanyFilter($tableAlias = '') {
+        if (isSuperAdmin()) {
+            return '1=1';
+        }
+        $prefix = $tableAlias ? "{$tableAlias}." : '';
+        return "{$prefix}company_id = :company_id";
+    }
+
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->db->bind(':company_id', $this->companyId);
+        }
+    }
 
     /**
      * Get all stock locations
      */
     public function getAllLocations() {
-        $this->db->query("SELECT * FROM stock_locations WHERE is_active = 1 ORDER BY name");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("SELECT * FROM stock_locations WHERE is_active = 1 AND {$companyFilter} ORDER BY name");
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -18,8 +44,10 @@ class StockDocument extends Model {
      * Get location by ID
      */
     public function getLocationById($id) {
-        $this->db->query("SELECT * FROM stock_locations WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("SELECT * FROM stock_locations WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         return $this->db->single();
     }
 
@@ -28,15 +56,16 @@ class StockDocument extends Model {
      */
     public function createLocation($data) {
         $this->db->query("INSERT INTO stock_locations
-                         (name, type, address, manager_id, capacity, is_active)
-                         VALUES (?, ?, ?, ?, ?, ?)");
+                         (company_id, name, type, address, manager_id, capacity, is_active)
+                         VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $data['name']);
-        $this->db->bind(2, $data['type']);
-        $this->db->bind(3, $data['address'] ?? null);
-        $this->db->bind(4, $data['manager_id'] ?? null);
-        $this->db->bind(5, $data['capacity'] ?? null);
-        $this->db->bind(6, $data['is_active'] ?? 1);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $data['name']);
+        $this->db->bind(3, $data['type']);
+        $this->db->bind(4, $data['address'] ?? null);
+        $this->db->bind(5, $data['manager_id'] ?? null);
+        $this->db->bind(6, $data['capacity'] ?? null);
+        $this->db->bind(7, $data['is_active'] ?? 1);
 
         return $this->db->execute();
     }
@@ -45,10 +74,11 @@ class StockDocument extends Model {
      * Update stock location
      */
     public function updateLocation($id, $data) {
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("UPDATE stock_locations SET
                          name = ?, type = ?, address = ?,
                          manager_id = ?, capacity = ?, is_active = ?
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
 
         $this->db->bind(1, $data['name']);
         $this->db->bind(2, $data['type']);
@@ -57,6 +87,7 @@ class StockDocument extends Model {
         $this->db->bind(5, $data['capacity'] ?? null);
         $this->db->bind(6, $data['is_active'] ?? 1);
         $this->db->bind(7, $id);
+        $this->bindCompanyId();
 
         return $this->db->execute();
     }
@@ -67,6 +98,7 @@ class StockDocument extends Model {
      * Get all stock documents
      */
     public function getAllDocuments($filters = []) {
+        $companyFilter = $this->getCompanyFilter('sd');
         $sql = "SELECT sd.*,
                        sl1.name as source_location_name,
                        sl2.name as destination_location_name,
@@ -75,7 +107,7 @@ class StockDocument extends Model {
                 LEFT JOIN stock_locations sl1 ON sd.source_location_id = sl1.id
                 LEFT JOIN stock_locations sl2 ON sd.destination_location_id = sl2.id
                 LEFT JOIN users u ON sd.created_by = u.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -98,6 +130,7 @@ class StockDocument extends Model {
         $sql .= " ORDER BY sd.document_date DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -111,6 +144,7 @@ class StockDocument extends Model {
      * Get document by ID with items
      */
     public function getDocumentById($id) {
+        $companyFilter = $this->getCompanyFilter('sd');
         $this->db->query("SELECT sd.*,
                                  sl1.name as source_location_name,
                                  sl2.name as destination_location_name,
@@ -121,8 +155,9 @@ class StockDocument extends Model {
                           LEFT JOIN stock_locations sl2 ON sd.destination_location_id = sl2.id
                           LEFT JOIN users u1 ON sd.created_by = u1.id
                           LEFT JOIN users u2 ON sd.validated_by = u2.id
-                          WHERE sd.id = ?");
+                          WHERE sd.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         $document = $this->db->single();
 
         if ($document) {
@@ -136,11 +171,13 @@ class StockDocument extends Model {
      * Get document items
      */
     public function getDocumentItems($documentId) {
+        $companyFilter = $this->getCompanyFilter('sdi');
         $this->db->query("SELECT sdi.*, p.name as part_name, p.reference as part_reference
                          FROM stock_document_items sdi
                          LEFT JOIN parts p ON sdi.part_id = p.id
-                         WHERE sdi.document_id = ?");
+                         WHERE sdi.document_id = ? AND {$companyFilter}");
         $this->db->bind(1, $documentId);
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -152,19 +189,20 @@ class StockDocument extends Model {
         $documentNumber = $this->generateDocumentNumber($data['document_type']);
 
         $this->db->query("INSERT INTO stock_documents
-                         (document_number, document_type, document_date,
+                         (company_id, document_number, document_type, document_date,
                           source_location_id, destination_location_id,
                           reference, notes, status, created_by)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)");
 
-        $this->db->bind(1, $documentNumber);
-        $this->db->bind(2, $data['document_type']);
-        $this->db->bind(3, $data['document_date']);
-        $this->db->bind(4, $data['source_location_id'] ?? null);
-        $this->db->bind(5, $data['destination_location_id'] ?? null);
-        $this->db->bind(6, $data['reference'] ?? null);
-        $this->db->bind(7, $data['notes'] ?? null);
-        $this->db->bind(8, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $documentNumber);
+        $this->db->bind(3, $data['document_type']);
+        $this->db->bind(4, $data['document_date']);
+        $this->db->bind(5, $data['source_location_id'] ?? null);
+        $this->db->bind(6, $data['destination_location_id'] ?? null);
+        $this->db->bind(7, $data['reference'] ?? null);
+        $this->db->bind(8, $data['notes'] ?? null);
+        $this->db->bind(9, $_SESSION['user_id'] ?? null);
 
         if ($this->db->execute()) {
             $documentId = $this->db->lastInsertId();
@@ -185,14 +223,15 @@ class StockDocument extends Model {
      */
     private function addDocumentItem($documentId, $item) {
         $this->db->query("INSERT INTO stock_document_items
-                         (document_id, part_id, quantity, unit_cost, notes)
-                         VALUES (?, ?, ?, ?, ?)");
+                         (company_id, document_id, part_id, quantity, unit_cost, notes)
+                         VALUES (?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $documentId);
-        $this->db->bind(2, $item['part_id']);
-        $this->db->bind(3, $item['quantity']);
-        $this->db->bind(4, $item['unit_cost'] ?? 0);
-        $this->db->bind(5, $item['notes'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $documentId);
+        $this->db->bind(3, $item['part_id']);
+        $this->db->bind(4, $item['quantity']);
+        $this->db->bind(5, $item['unit_cost'] ?? 0);
+        $this->db->bind(6, $item['notes'] ?? null);
 
         return $this->db->execute();
     }
@@ -209,13 +248,15 @@ class StockDocument extends Model {
         }
 
         // Update document status
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("UPDATE stock_documents
                          SET status = 'validated',
                              validated_by = ?,
                              validated_at = NOW()
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $_SESSION['user_id'] ?? null);
         $this->db->bind(2, $id);
+        $this->bindCompanyId();
 
         if (!$this->db->execute()) {
             return false;
@@ -272,9 +313,11 @@ class StockDocument extends Model {
      */
     private function updatePartStock($partId, $quantityChange, $locationId = null) {
         // Update main parts table
-        $this->db->query("UPDATE parts SET quantity = quantity + ? WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE parts SET quantity = quantity + ? WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $quantityChange);
         $this->db->bind(2, $partId);
+        $this->bindCompanyId();
         $this->db->execute();
 
         // TODO: Update location-specific stock if needed
@@ -285,9 +328,11 @@ class StockDocument extends Model {
      * Set part stock quantity (for adjustments)
      */
     private function setPartStock($partId, $newQuantity, $locationId = null) {
-        $this->db->query("UPDATE parts SET quantity = ? WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE parts SET quantity = ? WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $newQuantity);
         $this->db->bind(2, $partId);
+        $this->bindCompanyId();
         $this->db->execute();
     }
 
@@ -295,6 +340,7 @@ class StockDocument extends Model {
      * Generate document number based on type
      */
     private function generateDocumentNumber($type) {
+        $companyFilter = $this->getCompanyFilter('');
         $year = date('Y');
         $prefixes = [
             'receipt' => 'RCP',
@@ -307,9 +353,10 @@ class StockDocument extends Model {
         $prefix = ($prefixes[$type] ?? 'DOC') . '-' . $year . '-';
 
         $this->db->query("SELECT document_number FROM stock_documents
-                         WHERE document_number LIKE ?
+                         WHERE document_number LIKE ? AND {$companyFilter}
                          ORDER BY document_number DESC LIMIT 1");
         $this->db->bind(1, $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->db->single();
 
         if ($result) {
@@ -326,9 +373,11 @@ class StockDocument extends Model {
      * Cancel document
      */
     public function cancelDocument($id, $reason = null) {
-        $this->db->query("UPDATE stock_documents SET status = 'cancelled', notes = CONCAT(notes, '\nCancellation reason: ', ?) WHERE id = ?");
+        $companyFilter = $this->getCompanyFilter('');
+        $this->db->query("UPDATE stock_documents SET status = 'cancelled', notes = CONCAT(notes, '\nCancellation reason: ', ?) WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $reason ?? 'No reason provided');
         $this->db->bind(2, $id);
+        $this->bindCompanyId();
         return $this->db->execute();
     }
 
@@ -338,6 +387,7 @@ class StockDocument extends Model {
      * Get all inventories
      */
     public function getAllInventories($filters = []) {
+        $companyFilter = $this->getCompanyFilter('pi');
         $sql = "SELECT pi.*,
                        sl.name as location_name,
                        CONCAT(u1.first_name, ' ', u1.last_name) as created_by_name,
@@ -346,7 +396,7 @@ class StockDocument extends Model {
                 LEFT JOIN stock_locations sl ON pi.location_id = sl.id
                 LEFT JOIN users u1 ON pi.created_by = u1.id
                 LEFT JOIN users u2 ON pi.validated_by = u2.id
-                WHERE 1=1";
+                WHERE {$companyFilter}";
 
         $params = [];
 
@@ -363,6 +413,7 @@ class StockDocument extends Model {
         $sql .= " ORDER BY pi.inventory_date DESC";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
         if (!empty($params)) {
             foreach ($params as $i => $param) {
                 $this->db->bind($i + 1, $param);
@@ -376,6 +427,7 @@ class StockDocument extends Model {
      * Get inventory by ID
      */
     public function getInventoryById($id) {
+        $companyFilter = $this->getCompanyFilter('pi');
         $this->db->query("SELECT pi.*,
                                  sl.name as location_name,
                                  CONCAT(u1.first_name, ' ', u1.last_name) as created_by_name,
@@ -384,8 +436,9 @@ class StockDocument extends Model {
                           LEFT JOIN stock_locations sl ON pi.location_id = sl.id
                           LEFT JOIN users u1 ON pi.created_by = u1.id
                           LEFT JOIN users u2 ON pi.validated_by = u2.id
-                          WHERE pi.id = ?");
+                          WHERE pi.id = ? AND {$companyFilter}");
         $this->db->bind(1, $id);
+        $this->bindCompanyId();
         $inventory = $this->db->single();
 
         if ($inventory) {
@@ -399,11 +452,13 @@ class StockDocument extends Model {
      * Get inventory items
      */
     public function getInventoryItems($inventoryId) {
+        $companyFilter = $this->getCompanyFilter('ii');
         $this->db->query("SELECT ii.*, p.name as part_name, p.reference as part_reference
                          FROM inventory_items ii
                          LEFT JOIN parts p ON ii.part_id = p.id
-                         WHERE ii.inventory_id = ?");
+                         WHERE ii.inventory_id = ? AND {$companyFilter}");
         $this->db->bind(1, $inventoryId);
+        $this->bindCompanyId();
         return $this->db->resultSet();
     }
 
@@ -415,15 +470,16 @@ class StockDocument extends Model {
         $inventoryNumber = $this->generateInventoryNumber();
 
         $this->db->query("INSERT INTO physical_inventories
-                         (inventory_number, location_id, inventory_date,
+                         (company_id, inventory_number, location_id, inventory_date,
                           notes, status, created_by)
-                         VALUES (?, ?, ?, ?, 'in_progress', ?)");
+                         VALUES (?, ?, ?, ?, ?, 'in_progress', ?)");
 
-        $this->db->bind(1, $inventoryNumber);
-        $this->db->bind(2, $data['location_id']);
-        $this->db->bind(3, $data['inventory_date']);
-        $this->db->bind(4, $data['notes'] ?? null);
-        $this->db->bind(5, $_SESSION['user_id'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $inventoryNumber);
+        $this->db->bind(3, $data['location_id']);
+        $this->db->bind(4, $data['inventory_date']);
+        $this->db->bind(5, $data['notes'] ?? null);
+        $this->db->bind(6, $_SESSION['user_id'] ?? null);
 
         if ($this->db->execute()) {
             $inventoryId = $this->db->lastInsertId();
@@ -446,17 +502,18 @@ class StockDocument extends Model {
         $variance = floatval($item['counted_quantity']) - floatval($item['system_quantity']);
 
         $this->db->query("INSERT INTO inventory_items
-                         (inventory_id, part_id, system_quantity, counted_quantity,
+                         (company_id, inventory_id, part_id, system_quantity, counted_quantity,
                           variance, unit_cost, notes)
-                         VALUES (?, ?, ?, ?, ?, ?, ?)");
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $this->db->bind(1, $inventoryId);
-        $this->db->bind(2, $item['part_id']);
-        $this->db->bind(3, $item['system_quantity']);
-        $this->db->bind(4, $item['counted_quantity']);
-        $this->db->bind(5, $variance);
-        $this->db->bind(6, $item['unit_cost'] ?? 0);
-        $this->db->bind(7, $item['notes'] ?? null);
+        $this->db->bind(1, $this->companyId);
+        $this->db->bind(2, $inventoryId);
+        $this->db->bind(3, $item['part_id']);
+        $this->db->bind(4, $item['system_quantity']);
+        $this->db->bind(5, $item['counted_quantity']);
+        $this->db->bind(6, $variance);
+        $this->db->bind(7, $item['unit_cost'] ?? 0);
+        $this->db->bind(8, $item['notes'] ?? null);
 
         return $this->db->execute();
     }
@@ -472,13 +529,15 @@ class StockDocument extends Model {
         }
 
         // Update inventory status
+        $companyFilter = $this->getCompanyFilter('');
         $this->db->query("UPDATE physical_inventories
                          SET status = 'validated',
                              validated_by = ?,
                              validated_at = NOW()
-                         WHERE id = ?");
+                         WHERE id = ? AND {$companyFilter}");
         $this->db->bind(1, $_SESSION['user_id'] ?? null);
         $this->db->bind(2, $id);
+        $this->bindCompanyId();
 
         if (!$this->db->execute()) {
             return false;
@@ -499,13 +558,15 @@ class StockDocument extends Model {
      * Generate inventory number
      */
     private function generateInventoryNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $year = date('Y');
         $prefix = 'INV-' . $year . '-';
 
         $this->db->query("SELECT inventory_number FROM physical_inventories
-                         WHERE inventory_number LIKE ?
+                         WHERE inventory_number LIKE ? AND {$companyFilter}
                          ORDER BY inventory_number DESC LIMIT 1");
         $this->db->bind(1, $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->db->single();
 
         if ($result) {
@@ -522,25 +583,30 @@ class StockDocument extends Model {
      * Get stock statistics
      */
     public function getStockStats() {
+        $companyFilter = $this->getCompanyFilter('');
         $stats = [];
 
         // Total locations
-        $this->db->query("SELECT COUNT(*) as count FROM stock_locations WHERE is_active = 1");
+        $this->db->query("SELECT COUNT(*) as count FROM stock_locations WHERE is_active = 1 AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['total_locations'] = $result['count'];
 
         // Pending documents
-        $this->db->query("SELECT COUNT(*) as count FROM stock_documents WHERE status = 'draft'");
+        $this->db->query("SELECT COUNT(*) as count FROM stock_documents WHERE status = 'draft' AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['pending_documents'] = $result['count'];
 
         // In-progress inventories
-        $this->db->query("SELECT COUNT(*) as count FROM physical_inventories WHERE status = 'in_progress'");
+        $this->db->query("SELECT COUNT(*) as count FROM physical_inventories WHERE status = 'in_progress' AND {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['active_inventories'] = $result['count'];
 
         // Total stock value
-        $this->db->query("SELECT SUM(quantity * price) as total FROM parts");
+        $this->db->query("SELECT SUM(quantity * price) as total FROM parts WHERE {$companyFilter}");
+        $this->bindCompanyId();
         $result = $this->db->single();
         $stats['total_stock_value'] = $result['total'] ?? 0;
 
