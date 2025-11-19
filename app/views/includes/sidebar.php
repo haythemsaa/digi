@@ -214,6 +214,17 @@
                     </a>
                 </li>
                 <?php endif; ?>
+
+                <?php if (isSuperAdmin()): ?>
+                <!-- Super Admin Section -->
+                <li class="nav-item mt-3 pt-3 border-top border-white border-opacity-25">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'companies') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/companies">
+                        <i class="fas fa-building text-warning"></i> Entreprises
+                        <span class="badge bg-warning text-dark ms-2" style="font-size: 0.65rem;">ADMIN</span>
+                    </a>
+                </li>
+                <?php endif; ?>
             </ul>
         </nav>
 

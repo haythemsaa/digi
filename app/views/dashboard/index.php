@@ -3,6 +3,10 @@ $data['title'] = 'Dashboard';
 $data['page_title'] = 'Dashboard';
 $data['active_menu'] = 'dashboard';
 require_once APP_PATH . '/views/includes/header.php';
+
+// Get company context
+$currentCompany = getCurrentCompany();
+$isSuperAdmin = isSuperAdmin();
 ?>
 
 <div class="container-fluid">
@@ -11,6 +15,130 @@ require_once APP_PATH . '/views/includes/header.php';
 
         <div class="col-md-9 col-lg-10 main-content">
             <?php require_once APP_PATH . '/views/includes/navbar.php'; ?>
+
+            <?php if ($isSuperAdmin && $currentCompany): ?>
+            <!-- Super Admin Context Banner -->
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Contexte Super Admin:</strong> Vous visualisez les données de
+                <strong><?= htmlspecialchars($currentCompany['company_name']) ?></strong>
+                <a href="<?= APP_URL ?>/companies/view/<?= $currentCompany['id'] ?>" class="alert-link ms-2">
+                    Gérer l'entreprise <i class="fas fa-external-link-alt ms-1"></i>
+                </a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!$isSuperAdmin && $currentCompany): ?>
+                <?php
+                // Check subscription status
+                $subscriptionStatus = $currentCompany['subscription_status'] ?? 'trial';
+                if ($subscriptionStatus === 'trial' && isset($currentCompany['trial_ends_at'])):
+                    $trialEnd = new DateTime($currentCompany['trial_ends_at']);
+                    $now = new DateTime();
+                    $daysRemaining = $now->diff($trialEnd)->days;
+
+                    if ($daysRemaining <= 7 && $now < $trialEnd):
+                ?>
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Période d'essai:</strong> Il vous reste <?= $daysRemaining ?> jour(s) avant expiration.
+                    <a href="<?= APP_URL ?>/subscription" class="alert-link ms-2">
+                        Activer l'abonnement <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php
+                    endif;
+                endif;
+                ?>
+
+                <?php
+                // Check resource limits
+                $limits = CompanyMiddleware::getCompanyLimits();
+                $showLimitWarning = false;
+                $limitMessages = [];
+
+                foreach ($limits as $resource => $limit) {
+                    $percentage = $limit['max'] > 0 ? ($limit['current'] / $limit['max']) * 100 : 0;
+                    if ($percentage >= 80) {
+                        $showLimitWarning = true;
+                        $limitMessages[] = ucfirst($resource) . ': ' . $limit['current'] . '/' . $limit['max'];
+                    }
+                }
+
+                if ($showLimitWarning):
+                ?>
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fas fa-chart-line me-2"></i>
+                    <strong>Limites de ressources:</strong> Vous approchez des limites de votre plan.
+                    <?= implode(', ', $limitMessages) ?>
+                    <a href="<?= APP_URL ?>/subscription/upgrade" class="alert-link ms-2">
+                        Augmenter les limites <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (!$isSuperAdmin && $currentCompany): ?>
+            <!-- Resource Usage Overview -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-tachometer-alt me-2"></i>Utilisation des Ressources
+                                <small class="text-muted">(Plan: <?= ucfirst($currentCompany['subscription_plan'] ?? 'starter') ?>)</small>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <?php
+                                $limits = CompanyMiddleware::getCompanyLimits();
+                                $resourceIcons = [
+                                    'vehicles' => 'car',
+                                    'drivers' => 'id-card',
+                                    'users' => 'users'
+                                ];
+                                $resourceLabels = [
+                                    'vehicles' => 'Véhicules',
+                                    'drivers' => 'Chauffeurs',
+                                    'users' => 'Utilisateurs'
+                                ];
+
+                                foreach ($limits as $key => $limit):
+                                    $percentage = $limit['max'] > 0 ? ($limit['current'] / $limit['max']) * 100 : 0;
+                                    $progressColor = $percentage >= 90 ? 'danger' : ($percentage >= 70 ? 'warning' : 'success');
+                                ?>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-<?= $resourceIcons[$key] ?> me-2"></i>
+                                        <strong><?= $resourceLabels[$key] ?>:</strong>
+                                        <span class="ms-auto"><?= $limit['current'] ?> / <?= $limit['max'] ?></span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-<?= $progressColor ?>"
+                                             role="progressbar"
+                                             style="width: <?= min($percentage, 100) ?>%"
+                                             aria-valuenow="<?= $limit['current'] ?>"
+                                             aria-valuemin="0"
+                                             aria-valuemax="<?= $limit['max'] ?>">
+                                        </div>
+                                    </div>
+                                    <?php if ($limit['reached']): ?>
+                                        <small class="text-danger">
+                                            <i class="fas fa-exclamation-circle"></i> Limite atteinte
+                                        </small>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Statistics Cards -->
             <div class="row">
