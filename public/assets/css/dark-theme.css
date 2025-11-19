@@ -1,0 +1,341 @@
+/**
+ * Dark Theme for DigiParc
+ * Modern dark mode with smooth transitions
+ *
+ * @author DigiParc Team
+ * @version 1.0
+ */
+
+/* Dark theme CSS variables */
+[data-theme="dark"] {
+    /* Background colors */
+    --bg-primary: #1a1d23;
+    --bg-secondary: #2d3139;
+    --bg-tertiary: #3a3f47;
+    --bg-card: #252930;
+    --bg-hover: #3a3f47;
+
+    /* Text colors */
+    --text-primary: #e4e6eb;
+    --text-secondary: #b0b3b8;
+    --text-tertiary: #8a8d91;
+    --text-inverse: #1a1d23;
+
+    /* Border colors */
+    --border-color: #3a3f47;
+    --border-light: #2d3139;
+
+    /* Primary colors (keep brand colors) */
+    --primary: #4a9eff;
+    --primary-dark: #3182ce;
+    --primary-light: #63b3ed;
+
+    /* Success/Warning/Danger (adjusted for dark theme) */
+    --success: #48bb78;
+    --success-dark: #38a169;
+    --warning: #ed8936;
+    --danger: #f56565;
+    --info: #4299e1;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* Base elements */
+[data-theme="dark"] body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Cards */
+[data-theme="dark"] .card {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Tables */
+[data-theme="dark"] .table {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table thead th {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .table tbody tr {
+    border-color: var(--border-light);
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+    background-color: var(--bg-hover);
+}
+
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Forms */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--bg-tertiary);
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-light {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-light:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Navbar */
+[data-theme="dark"] .navbar {
+    background-color: var(--bg-card) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .navbar-light .navbar-brand,
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .navbar-light .navbar-nav .nav-link:hover {
+    color: var(--primary);
+}
+
+/* Sidebar */
+[data-theme="dark"] .sidebar {
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .sidebar .nav-link {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .sidebar .nav-link:hover,
+[data-theme="dark"] .sidebar .nav-link.active {
+    background-color: var(--bg-hover);
+    color: var(--primary);
+}
+
+/* Modals */
+[data-theme="dark"] .modal-content {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+/* Dropdowns */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--bg-hover);
+    color: var(--primary);
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-color: var(--border-color);
+}
+
+/* Alerts */
+[data-theme="dark"] .alert {
+    border-width: 1px;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(66, 153, 225, 0.15);
+    border-color: var(--info);
+    color: #90cdf4;
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(72, 187, 120, 0.15);
+    border-color: var(--success);
+    color: #9ae6b4;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(237, 137, 54, 0.15);
+    border-color: var(--warning);
+    color: #fbd38d;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(245, 101, 101, 0.15);
+    border-color: var(--danger);
+    color: #feb2b2;
+}
+
+/* Badges */
+[data-theme="dark"] .badge {
+    color: var(--text-inverse);
+}
+
+/* Progress bars */
+[data-theme="dark"] .progress {
+    background-color: var(--bg-secondary);
+}
+
+/* List groups */
+[data-theme="dark"] .list-group-item {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .list-group-item:hover {
+    background-color: var(--bg-hover);
+}
+
+/* Pagination */
+[data-theme="dark"] .page-link {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-link:hover {
+    background-color: var(--bg-hover);
+    color: var(--primary);
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Charts (Chart.js) */
+[data-theme="dark"] .chartjs-render-monitor {
+    filter: brightness(0.9);
+}
+
+/* Scrollbars (webkit) */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Code blocks */
+[data-theme="dark"] code {
+    background-color: var(--bg-secondary);
+    color: #f687b3;
+}
+
+[data-theme="dark"] pre {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary, #0d6efd);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+.theme-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:active i {
+    transform: rotate(360deg);
+}
+
+/* Smooth theme transition */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Prevent transition on page load */
+.no-transition {
+    transition: none !important;
+}

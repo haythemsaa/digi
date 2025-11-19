@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: DigiParc Fleet Management API
+  version: 1.0.0
+  description: |
+    RESTful API for DigiParc fleet management system.
+
+    ## Authentication
+    All endpoints (except /auth/*) require a Bearer token in the Authorization header:
+    ```
+    Authorization: Bearer YOUR_TOKEN_HERE
+    ```
+
+    ## Rate Limiting
+    - 100 requests per minute per user/IP
+    - Returns 429 status when limit exceeded
+
+    ## Response Format
+    All responses are JSON format with consistent structure:
+    ```json
+    {
+      "success": true,
+      "data": {...},
+      "message": "Optional message"
+    }
+    ```
+
+    Error responses:
+    ```json
+    {
+      "error": true,
+      "message": "Error description",
+      "details": {...}
+    }
+    ```
+
+  contact:
+    name: DigiParc Support
+    email: support@digiparc.com
+    url: https://digiparc.com
+
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.digiparc.com/v1
+    description: Production server
+  - url: https://staging-api.digiparc.com/v1
+    description: Staging server
+  - url: http://localhost/api/v1
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Login, logout, token refresh
+  - name: Vehicles
+    description: Vehicle management
+  - name: Drivers
+    description: Driver management
+  - name: Missions
+    description: Mission/trip management
+  - name: Tracking
+    description: GPS tracking
+  - name: Analytics
+    description: Analytics and KPIs
+  - name: Alerts
+    description: Alert management
+  - name: Carbon
+    description: Carbon footprint tracking
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive access token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@digiparc.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expires_at:
+                        type: string
+                        format: date-time
+                      user:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /vehicles:
+    get:
+      tags:
+        - Vehicles
+      summary: List all vehicles
+      description: Retrieve paginated list of vehicles for current company
+      operationId: getVehicles
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, maintenance]
+      responses:
+        '200':
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vehicle'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Vehicles
+      summary: Create vehicle
+      description: Add a new vehicle to the fleet
+      operationId: createVehicle
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '201':
+          description: Vehicle created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /vehicles/{id}:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicle details
+      operationId: getVehicle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Vehicles
+      summary: Update vehicle
+      operationId: updateVehicle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '200':
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+
+    delete:
+      tags:
+        - Vehicles
+      summary: Delete vehicle
+      operationId: deleteVehicle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Get dashboard KPIs
+      description: Retrieve all dashboard KPIs for current company
+      operationId: getDashboardKPIs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Dashboard KPIs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/DashboardKPIs'
+
+  /carbon/footprint:
+    get:
+      tags:
+        - Carbon
+      summary: Get carbon footprint
+      description: Calculate CO2 emissions for current company
+      operationId: getCarbonFootprint
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Carbon footprint data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/CarbonFootprint'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, user]
+        company_id:
+          type: integer
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+        registration_number:
+          type: string
+          example: ABC-123-XY
+        make:
+          type: string
+          example: Renault
+        model:
+          type: string
+          example: Master
+        year:
+          type: integer
+          example: 2023
+        fuel_type:
+          type: string
+          enum: [diesel, gasoline, electric, hybrid]
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+        current_mileage:
+          type: integer
+        purchase_date:
+          type: string
+          format: date
+
+    VehicleInput:
+      type: object
+      required:
+        - registration_number
+        - make
+        - model
+        - fuel_type
+      properties:
+        registration_number:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        fuel_type:
+          type: string
+          enum: [diesel, gasoline, electric, hybrid]
+        current_mileage:
+          type: integer
+        purchase_date:
+          type: string
+          format: date
+
+    DashboardKPIs:
+      type: object
+      properties:
+        fleet:
+          type: object
+          properties:
+            total_vehicles:
+              type: integer
+            active_vehicles:
+              type: integer
+            utilization_rate:
+              type: number
+              format: float
+        financial:
+          type: object
+          properties:
+            total_revenue:
+              type: number
+              format: float
+            total_costs:
+              type: number
+              format: float
+            profit_margin:
+              type: number
+              format: float
+
+    CarbonFootprint:
+      type: object
+      properties:
+        total_co2:
+          type: number
+          format: float
+          description: Total CO2 in kg
+        total_co2_tons:
+          type: number
+          format: float
+        total_distance:
+          type: number
+          format: float
+        avg_co2_per_km:
+          type: number
+          format: float
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - Invalid or missing token
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: Unauthorized
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: Resource not found
+
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: boolean
+                example: true
+              message:
+                type: string
+              validation_errors:
+                type: object
