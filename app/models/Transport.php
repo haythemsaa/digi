@@ -1,34 +1,67 @@
 <?php
 /**
- * Transport Model
+ * Transport Model - Multi-tenant enabled
+ * Handles transport quotes, orders, and invoices
  */
 
 class Transport extends Database {
+    private $companyId;
 
     public function __construct() {
         parent::__construct();
+        $this->companyId = getCurrentCompanyId();
+
+        // Ensure company context exists
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    /**
+     * Get company filter for SQL queries
+     */
+    private function getCompanyFilter($tableAlias = '') {
+        if (isSuperAdmin()) {
+            return '1=1'; // No filter for super admins
+        }
+        $prefix = $tableAlias ? "{$tableAlias}." : '';
+        return "{$prefix}company_id = :company_id";
+    }
+
+    /**
+     * Bind company ID to query
+     */
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->bind(':company_id', $this->companyId);
+        }
     }
 
     // ========== CLIENTS ==========
     public function getAllClients() {
-        $this->query('SELECT * FROM clients ORDER BY company_name, first_name, last_name');
+        $companyFilter = $this->getCompanyFilter('');
+        $this->query("SELECT * FROM clients WHERE {$companyFilter} ORDER BY company_name, first_name, last_name");
+        $this->bindCompanyId();
         return $this->fetchAll();
     }
 
     public function getClientById($id) {
-        $this->query('SELECT * FROM clients WHERE id = :id');
+        $companyFilter = $this->getCompanyFilter('');
+        $this->query("SELECT * FROM clients WHERE id = :id AND {$companyFilter}");
         $this->bind(':id', $id);
+        $this->bindCompanyId();
         return $this->fetch();
     }
 
     public function addClient($data) {
-        $this->query('INSERT INTO clients (client_type, company_name, first_name, last_name,
+        $this->query('INSERT INTO clients (company_id, client_type, company_name, first_name, last_name,
             email, phone, mobile, tax_id, address, city, postal_code, country,
             payment_terms, credit_limit, status, notes, created_by)
-            VALUES (:client_type, :company_name, :first_name, :last_name,
+            VALUES (:company_id, :client_type, :company_name, :first_name, :last_name,
             :email, :phone, :mobile, :tax_id, :address, :city, :postal_code, :country,
             :payment_terms, :credit_limit, :status, :notes, :created_by)');
 
+        $this->bind(':company_id', $this->companyId);
         $this->bind(':client_type', $data['client_type']);
         $this->bind(':company_name', $data['company_name'] ?? null);
         $this->bind(':first_name', $data['first_name'] ?? null);
@@ -55,30 +88,35 @@ class Transport extends Database {
 
     // ========== QUOTES ==========
     public function getAllQuotes() {
-        $this->query('SELECT q.*, c.company_name, c.first_name, c.last_name
+        $companyFilter = $this->getCompanyFilter('q');
+        $this->query("SELECT q.*, c.company_name, c.first_name, c.last_name
             FROM transport_quotes q
             LEFT JOIN clients c ON q.client_id = c.id
-            ORDER BY q.created_at DESC');
+            WHERE {$companyFilter}
+            ORDER BY q.created_at DESC");
+        $this->bindCompanyId();
         return $this->fetchAll();
     }
 
     public function getQuoteById($id) {
-        $this->query('SELECT q.*, c.*
+        $companyFilter = $this->getCompanyFilter('q');
+        $this->query("SELECT q.*, c.*
             FROM transport_quotes q
             LEFT JOIN clients c ON q.client_id = c.id
-            WHERE q.id = :id');
+            WHERE q.id = :id AND {$companyFilter}");
         $this->bind(':id', $id);
+        $this->bindCompanyId();
         return $this->fetch();
     }
 
     public function addQuote($data) {
         $this->query('INSERT INTO transport_quotes (
-            quote_number, client_id, pickup_address, pickup_city, pickup_date,
+            company_id, quote_number, client_id, pickup_address, pickup_city, pickup_date,
             delivery_address, delivery_city, delivery_date, distance,
             cargo_type, cargo_weight, cargo_volume, vehicle_type_required,
             price, tax_rate, tax_amount, total_amount, status, valid_until, notes, created_by
         ) VALUES (
-            :quote_number, :client_id, :pickup_address, :pickup_city, :pickup_date,
+            :company_id, :quote_number, :client_id, :pickup_address, :pickup_city, :pickup_date,
             :delivery_address, :delivery_city, :delivery_date, :distance,
             :cargo_type, :cargo_weight, :cargo_volume, :vehicle_type_required,
             :price, :tax_rate, :tax_amount, :total_amount, :status, :valid_until, :notes, :created_by
@@ -87,6 +125,7 @@ class Transport extends Database {
         $taxAmount = ($data['price'] * ($data['tax_rate'] ?? 0)) / 100;
         $totalAmount = $data['price'] + $taxAmount;
 
+        $this->bind(':company_id', $this->companyId);
         $this->bind(':quote_number', $data['quote_number']);
         $this->bind(':client_id', $data['client_id']);
         $this->bind(':pickup_address', $data['pickup_address']);
@@ -117,34 +156,39 @@ class Transport extends Database {
 
     // ========== ORDERS ==========
     public function getAllOrders() {
-        $this->query('SELECT o.*, c.company_name, c.first_name, c.last_name,
+        $companyFilter = $this->getCompanyFilter('o');
+        $this->query("SELECT o.*, c.company_name, c.first_name, c.last_name,
             v.registration_number, d.first_name as driver_first, d.last_name as driver_last
             FROM transport_orders o
             LEFT JOIN clients c ON o.client_id = c.id
             LEFT JOIN vehicles v ON o.vehicle_id = v.id
             LEFT JOIN users d ON o.driver_id = d.id
-            ORDER BY o.created_at DESC');
+            WHERE {$companyFilter}
+            ORDER BY o.created_at DESC");
+        $this->bindCompanyId();
         return $this->fetchAll();
     }
 
     public function getOrderById($id) {
-        $this->query('SELECT o.*, c.*
+        $companyFilter = $this->getCompanyFilter('o');
+        $this->query("SELECT o.*, c.*
             FROM transport_orders o
             LEFT JOIN clients c ON o.client_id = c.id
-            WHERE o.id = :id');
+            WHERE o.id = :id AND {$companyFilter}");
         $this->bind(':id', $id);
+        $this->bindCompanyId();
         return $this->fetch();
     }
 
     public function addOrder($data) {
         $this->query('INSERT INTO transport_orders (
-            order_number, quote_id, client_id, vehicle_id, driver_id,
+            company_id, order_number, quote_id, client_id, vehicle_id, driver_id,
             pickup_address, pickup_city, pickup_date, pickup_contact, pickup_phone,
             delivery_address, delivery_city, delivery_date, delivery_contact, delivery_phone,
             distance, cargo_type, cargo_description, cargo_weight, cargo_volume,
             price, tax_rate, tax_amount, total_amount, status, priority, special_instructions, created_by
         ) VALUES (
-            :order_number, :quote_id, :client_id, :vehicle_id, :driver_id,
+            :company_id, :order_number, :quote_id, :client_id, :vehicle_id, :driver_id,
             :pickup_address, :pickup_city, :pickup_date, :pickup_contact, :pickup_phone,
             :delivery_address, :delivery_city, :delivery_date, :delivery_contact, :delivery_phone,
             :distance, :cargo_type, :cargo_description, :cargo_weight, :cargo_volume,
@@ -154,6 +198,7 @@ class Transport extends Database {
         $taxAmount = ($data['price'] * ($data['tax_rate'] ?? 0)) / 100;
         $totalAmount = $data['price'] + $taxAmount;
 
+        $this->bind(':company_id', $this->companyId);
         $this->bind(':order_number', $data['order_number']);
         $this->bind(':quote_id', $data['quote_id'] ?? null);
         $this->bind(':client_id', $data['client_id']);
@@ -190,38 +235,45 @@ class Transport extends Database {
     }
 
     public function updateOrderStatus($id, $status) {
-        $this->query('UPDATE transport_orders SET status = :status WHERE id = :id');
+        $companyFilter = $this->getCompanyFilter('');
+        $this->query("UPDATE transport_orders SET status = :status WHERE id = :id AND {$companyFilter}");
         $this->bind(':id', $id);
         $this->bind(':status', $status);
+        $this->bindCompanyId();
         return $this->execute();
     }
 
     // ========== INVOICES ==========
     public function getAllInvoices() {
-        $this->query('SELECT i.*, c.company_name, c.first_name, c.last_name
+        $companyFilter = $this->getCompanyFilter('i');
+        $this->query("SELECT i.*, c.company_name, c.first_name, c.last_name
             FROM invoices i
             LEFT JOIN clients c ON i.client_id = c.id
-            ORDER BY i.created_at DESC');
+            WHERE {$companyFilter}
+            ORDER BY i.created_at DESC");
+        $this->bindCompanyId();
         return $this->fetchAll();
     }
 
     public function getInvoiceById($id) {
-        $this->query('SELECT i.*, c.*, o.order_number
+        $companyFilter = $this->getCompanyFilter('i');
+        $this->query("SELECT i.*, c.*, o.order_number
             FROM invoices i
             LEFT JOIN clients c ON i.client_id = c.id
             LEFT JOIN transport_orders o ON i.transport_order_id = o.id
-            WHERE i.id = :id');
+            WHERE i.id = :id AND {$companyFilter}");
         $this->bind(':id', $id);
+        $this->bindCompanyId();
         return $this->fetch();
     }
 
     public function addInvoice($data) {
         $this->query('INSERT INTO invoices (
-            invoice_number, transport_order_id, client_id, invoice_date, due_date,
+            company_id, invoice_number, transport_order_id, client_id, invoice_date, due_date,
             subtotal, tax_rate, tax_amount, discount, total_amount, paid_amount,
             balance, status, payment_method, notes, created_by
         ) VALUES (
-            :invoice_number, :transport_order_id, :client_id, :invoice_date, :due_date,
+            :company_id, :invoice_number, :transport_order_id, :client_id, :invoice_date, :due_date,
             :subtotal, :tax_rate, :tax_amount, :discount, :total_amount, :paid_amount,
             :balance, :status, :payment_method, :notes, :created_by
         )');
@@ -230,6 +282,7 @@ class Transport extends Database {
         $totalAmount = $data['subtotal'] + $taxAmount - ($data['discount'] ?? 0);
         $balance = $totalAmount - ($data['paid_amount'] ?? 0);
 
+        $this->bind(':company_id', $this->companyId);
         $this->bind(':invoice_number', $data['invoice_number']);
         $this->bind(':transport_order_id', $data['transport_order_id'] ?? null);
         $this->bind(':client_id', $data['client_id']);
@@ -254,25 +307,31 @@ class Transport extends Database {
     }
 
     public function generateQuoteNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $prefix = 'QT-' . date('Y') . '-';
-        $this->query('SELECT COUNT(*) as count FROM transport_quotes WHERE quote_number LIKE :prefix');
+        $this->query("SELECT COUNT(*) as count FROM transport_quotes WHERE quote_number LIKE :prefix AND {$companyFilter}");
         $this->bind(':prefix', $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->fetch();
         return $prefix . str_pad($result['count'] + 1, 4, '0', STR_PAD_LEFT);
     }
 
     public function generateOrderNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $prefix = 'TO-' . date('Y') . '-';
-        $this->query('SELECT COUNT(*) as count FROM transport_orders WHERE order_number LIKE :prefix');
+        $this->query("SELECT COUNT(*) as count FROM transport_orders WHERE order_number LIKE :prefix AND {$companyFilter}");
         $this->bind(':prefix', $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->fetch();
         return $prefix . str_pad($result['count'] + 1, 4, '0', STR_PAD_LEFT);
     }
 
     public function generateInvoiceNumber() {
+        $companyFilter = $this->getCompanyFilter('');
         $prefix = 'INV-' . date('Y') . '-';
-        $this->query('SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE :prefix');
+        $this->query("SELECT COUNT(*) as count FROM invoices WHERE invoice_number LIKE :prefix AND {$companyFilter}");
         $this->bind(':prefix', $prefix . '%');
+        $this->bindCompanyId();
         $result = $this->fetch();
         return $prefix . str_pad($result['count'] + 1, 4, '0', STR_PAD_LEFT);
     }
