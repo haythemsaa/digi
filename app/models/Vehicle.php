@@ -1,90 +1,129 @@
 <?php
 /**
- * Vehicle Model
+ * Vehicle Model - Multi-tenant enabled
  */
 
-class Vehicle extends Database {
+class Vehicle {
+    private $db;
+    private $companyId;
 
     public function __construct() {
-        parent::__construct();
+        $this->db = new Database();
+        $this->companyId = getCurrentCompanyId();
+
+        // Ensure company context exists
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    /**
+     * Get company filter for SQL queries
+     */
+    private function getCompanyFilter($tableAlias = 'v') {
+        if (isSuperAdmin()) {
+            return '1=1'; // No filter for super admins
+        }
+        return "{$tableAlias}.company_id = :company_id";
+    }
+
+    /**
+     * Bind company ID to query
+     */
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->db->bind(':company_id', $this->companyId);
+        }
     }
 
     /**
      * Get all vehicles
      */
     public function getAllVehicles() {
-        $this->query('SELECT * FROM vehicles ORDER BY created_at DESC');
-        return $this->fetchAll();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT * FROM vehicles v WHERE {$filter} ORDER BY v.created_at DESC");
+        $this->bindCompanyId();
+        return $this->db->fetchAll();
     }
 
     /**
      * Get vehicle by ID
      */
     public function getVehicleById($id) {
-        $this->query('SELECT * FROM vehicles WHERE id = :id');
-        $this->bind(':id', $id);
-        return $this->fetch();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT * FROM vehicles v WHERE v.id = :id AND {$filter}");
+        $this->db->bind(':id', $id);
+        $this->bindCompanyId();
+        return $this->db->fetch();
     }
 
     /**
      * Get vehicles by status
      */
     public function getVehiclesByStatus($status) {
-        $this->query('SELECT * FROM vehicles WHERE status = :status ORDER BY registration_number');
-        $this->bind(':status', $status);
-        return $this->fetchAll();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT * FROM vehicles v WHERE v.status = :status AND {$filter} ORDER BY v.registration_number");
+        $this->db->bind(':status', $status);
+        $this->bindCompanyId();
+        return $this->db->fetchAll();
     }
 
     /**
      * Add new vehicle
      */
     public function addVehicle($data) {
-        $this->query('INSERT INTO vehicles (
-            registration_number, vin, brand, model, year, color, type, fuel_type,
+        // Check vehicle limit
+        if (!isSuperAdmin() && hasReachedVehicleLimit()) {
+            return false;
+        }
+
+        $this->db->query('INSERT INTO vehicles (
+            company_id, registration_number, vin, brand, model, year, color, type, fuel_type,
             engine_capacity, power, transmission, seats, doors, weight, load_capacity,
             purchase_date, purchase_price, current_value, insurance_company,
             insurance_policy, insurance_expiry, registration_expiry, technical_control_expiry,
             odometer, fuel_tank_capacity, status, gps_device_id, notes, photo
         ) VALUES (
-            :registration_number, :vin, :brand, :model, :year, :color, :type, :fuel_type,
+            :company_id, :registration_number, :vin, :brand, :model, :year, :color, :type, :fuel_type,
             :engine_capacity, :power, :transmission, :seats, :doors, :weight, :load_capacity,
             :purchase_date, :purchase_price, :current_value, :insurance_company,
             :insurance_policy, :insurance_expiry, :registration_expiry, :technical_control_expiry,
             :odometer, :fuel_tank_capacity, :status, :gps_device_id, :notes, :photo
         )');
 
-        $this->bind(':registration_number', $data['registration_number']);
-        $this->bind(':vin', $data['vin'] ?? null);
-        $this->bind(':brand', $data['brand']);
-        $this->bind(':model', $data['model']);
-        $this->bind(':year', $data['year'] ?? null);
-        $this->bind(':color', $data['color'] ?? null);
-        $this->bind(':type', $data['type']);
-        $this->bind(':fuel_type', $data['fuel_type']);
-        $this->bind(':engine_capacity', $data['engine_capacity'] ?? null);
-        $this->bind(':power', $data['power'] ?? null);
-        $this->bind(':transmission', $data['transmission'] ?? null);
-        $this->bind(':seats', $data['seats'] ?? null);
-        $this->bind(':doors', $data['doors'] ?? null);
-        $this->bind(':weight', $data['weight'] ?? null);
-        $this->bind(':load_capacity', $data['load_capacity'] ?? null);
-        $this->bind(':purchase_date', $data['purchase_date'] ?? null);
-        $this->bind(':purchase_price', $data['purchase_price'] ?? null);
-        $this->bind(':current_value', $data['current_value'] ?? null);
-        $this->bind(':insurance_company', $data['insurance_company'] ?? null);
-        $this->bind(':insurance_policy', $data['insurance_policy'] ?? null);
-        $this->bind(':insurance_expiry', $data['insurance_expiry'] ?? null);
-        $this->bind(':registration_expiry', $data['registration_expiry'] ?? null);
-        $this->bind(':technical_control_expiry', $data['technical_control_expiry'] ?? null);
-        $this->bind(':odometer', $data['odometer'] ?? 0);
-        $this->bind(':fuel_tank_capacity', $data['fuel_tank_capacity'] ?? null);
-        $this->bind(':status', $data['status'] ?? 'active');
-        $this->bind(':gps_device_id', $data['gps_device_id'] ?? null);
-        $this->bind(':notes', $data['notes'] ?? null);
-        $this->bind(':photo', $data['photo'] ?? null);
+        $this->db->bind(':company_id', $this->companyId);
+        $this->db->bind(':registration_number', $data['registration_number']);
+        $this->db->bind(':vin', $data['vin'] ?? null);
+        $this->db->bind(':brand', $data['brand']);
+        $this->db->bind(':model', $data['model']);
+        $this->db->bind(':year', $data['year'] ?? null);
+        $this->db->bind(':color', $data['color'] ?? null);
+        $this->db->bind(':type', $data['type']);
+        $this->db->bind(':fuel_type', $data['fuel_type']);
+        $this->db->bind(':engine_capacity', $data['engine_capacity'] ?? null);
+        $this->db->bind(':power', $data['power'] ?? null);
+        $this->db->bind(':transmission', $data['transmission'] ?? null);
+        $this->db->bind(':seats', $data['seats'] ?? null);
+        $this->db->bind(':doors', $data['doors'] ?? null);
+        $this->db->bind(':weight', $data['weight'] ?? null);
+        $this->db->bind(':load_capacity', $data['load_capacity'] ?? null);
+        $this->db->bind(':purchase_date', $data['purchase_date'] ?? null);
+        $this->db->bind(':purchase_price', $data['purchase_price'] ?? null);
+        $this->db->bind(':current_value', $data['current_value'] ?? null);
+        $this->db->bind(':insurance_company', $data['insurance_company'] ?? null);
+        $this->db->bind(':insurance_policy', $data['insurance_policy'] ?? null);
+        $this->db->bind(':insurance_expiry', $data['insurance_expiry'] ?? null);
+        $this->db->bind(':registration_expiry', $data['registration_expiry'] ?? null);
+        $this->db->bind(':technical_control_expiry', $data['technical_control_expiry'] ?? null);
+        $this->db->bind(':odometer', $data['odometer'] ?? 0);
+        $this->db->bind(':fuel_tank_capacity', $data['fuel_tank_capacity'] ?? null);
+        $this->db->bind(':status', $data['status'] ?? 'active');
+        $this->db->bind(':gps_device_id', $data['gps_device_id'] ?? null);
+        $this->db->bind(':notes', $data['notes'] ?? null);
+        $this->db->bind(':photo', $data['photo'] ?? null);
 
-        if ($this->execute()) {
-            return $this->lastInsertId();
+        if ($this->db->execute()) {
+            return $this->db->lastInsertId();
         }
 
         return false;
@@ -94,87 +133,94 @@ class Vehicle extends Database {
      * Update vehicle
      */
     public function updateVehicle($id, $data) {
-        $this->query('UPDATE vehicles SET
-            registration_number = :registration_number,
-            vin = :vin,
-            brand = :brand,
-            model = :model,
-            year = :year,
-            color = :color,
-            type = :type,
-            fuel_type = :fuel_type,
-            engine_capacity = :engine_capacity,
-            power = :power,
-            transmission = :transmission,
-            seats = :seats,
-            doors = :doors,
-            weight = :weight,
-            load_capacity = :load_capacity,
-            purchase_date = :purchase_date,
-            purchase_price = :purchase_price,
-            current_value = :current_value,
-            insurance_company = :insurance_company,
-            insurance_policy = :insurance_policy,
-            insurance_expiry = :insurance_expiry,
-            registration_expiry = :registration_expiry,
-            technical_control_expiry = :technical_control_expiry,
-            odometer = :odometer,
-            fuel_tank_capacity = :fuel_tank_capacity,
-            status = :status,
-            gps_device_id = :gps_device_id,
-            notes = :notes,
-            photo = :photo
-            WHERE id = :id');
+        $filter = $this->getCompanyFilter('v');
+        
+        $this->db->query('UPDATE vehicles v SET
+            v.registration_number = :registration_number,
+            v.vin = :vin,
+            v.brand = :brand,
+            v.model = :model,
+            v.year = :year,
+            v.color = :color,
+            v.type = :type,
+            v.fuel_type = :fuel_type,
+            v.engine_capacity = :engine_capacity,
+            v.power = :power,
+            v.transmission = :transmission,
+            v.seats = :seats,
+            v.doors = :doors,
+            v.weight = :weight,
+            v.load_capacity = :load_capacity,
+            v.purchase_date = :purchase_date,
+            v.purchase_price = :purchase_price,
+            v.current_value = :current_value,
+            v.insurance_company = :insurance_company,
+            v.insurance_policy = :insurance_policy,
+            v.insurance_expiry = :insurance_expiry,
+            v.registration_expiry = :registration_expiry,
+            v.technical_control_expiry = :technical_control_expiry,
+            v.odometer = :odometer,
+            v.fuel_tank_capacity = :fuel_tank_capacity,
+            v.status = :status,
+            v.gps_device_id = :gps_device_id,
+            v.notes = :notes,
+            v.photo = :photo
+            WHERE v.id = :id AND ' . $filter);
 
-        $this->bind(':id', $id);
-        $this->bind(':registration_number', $data['registration_number']);
-        $this->bind(':vin', $data['vin'] ?? null);
-        $this->bind(':brand', $data['brand']);
-        $this->bind(':model', $data['model']);
-        $this->bind(':year', $data['year'] ?? null);
-        $this->bind(':color', $data['color'] ?? null);
-        $this->bind(':type', $data['type']);
-        $this->bind(':fuel_type', $data['fuel_type']);
-        $this->bind(':engine_capacity', $data['engine_capacity'] ?? null);
-        $this->bind(':power', $data['power'] ?? null);
-        $this->bind(':transmission', $data['transmission'] ?? null);
-        $this->bind(':seats', $data['seats'] ?? null);
-        $this->bind(':doors', $data['doors'] ?? null);
-        $this->bind(':weight', $data['weight'] ?? null);
-        $this->bind(':load_capacity', $data['load_capacity'] ?? null);
-        $this->bind(':purchase_date', $data['purchase_date'] ?? null);
-        $this->bind(':purchase_price', $data['purchase_price'] ?? null);
-        $this->bind(':current_value', $data['current_value'] ?? null);
-        $this->bind(':insurance_company', $data['insurance_company'] ?? null);
-        $this->bind(':insurance_policy', $data['insurance_policy'] ?? null);
-        $this->bind(':insurance_expiry', $data['insurance_expiry'] ?? null);
-        $this->bind(':registration_expiry', $data['registration_expiry'] ?? null);
-        $this->bind(':technical_control_expiry', $data['technical_control_expiry'] ?? null);
-        $this->bind(':odometer', $data['odometer'] ?? 0);
-        $this->bind(':fuel_tank_capacity', $data['fuel_tank_capacity'] ?? null);
-        $this->bind(':status', $data['status']);
-        $this->bind(':gps_device_id', $data['gps_device_id'] ?? null);
-        $this->bind(':notes', $data['notes'] ?? null);
-        $this->bind(':photo', $data['photo'] ?? null);
+        $this->db->bind(':id', $id);
+        $this->bindCompanyId();
+        $this->db->bind(':registration_number', $data['registration_number']);
+        $this->db->bind(':vin', $data['vin'] ?? null);
+        $this->db->bind(':brand', $data['brand']);
+        $this->db->bind(':model', $data['model']);
+        $this->db->bind(':year', $data['year'] ?? null);
+        $this->db->bind(':color', $data['color'] ?? null);
+        $this->db->bind(':type', $data['type']);
+        $this->db->bind(':fuel_type', $data['fuel_type']);
+        $this->db->bind(':engine_capacity', $data['engine_capacity'] ?? null);
+        $this->db->bind(':power', $data['power'] ?? null);
+        $this->db->bind(':transmission', $data['transmission'] ?? null);
+        $this->db->bind(':seats', $data['seats'] ?? null);
+        $this->db->bind(':doors', $data['doors'] ?? null);
+        $this->db->bind(':weight', $data['weight'] ?? null);
+        $this->db->bind(':load_capacity', $data['load_capacity'] ?? null);
+        $this->db->bind(':purchase_date', $data['purchase_date'] ?? null);
+        $this->db->bind(':purchase_price', $data['purchase_price'] ?? null);
+        $this->db->bind(':current_value', $data['current_value'] ?? null);
+        $this->db->bind(':insurance_company', $data['insurance_company'] ?? null);
+        $this->db->bind(':insurance_policy', $data['insurance_policy'] ?? null);
+        $this->db->bind(':insurance_expiry', $data['insurance_expiry'] ?? null);
+        $this->db->bind(':registration_expiry', $data['registration_expiry'] ?? null);
+        $this->db->bind(':technical_control_expiry', $data['technical_control_expiry'] ?? null);
+        $this->db->bind(':odometer', $data['odometer'] ?? 0);
+        $this->db->bind(':fuel_tank_capacity', $data['fuel_tank_capacity'] ?? null);
+        $this->db->bind(':status', $data['status']);
+        $this->db->bind(':gps_device_id', $data['gps_device_id'] ?? null);
+        $this->db->bind(':notes', $data['notes'] ?? null);
+        $this->db->bind(':photo', $data['photo'] ?? null);
 
-        return $this->execute();
+        return $this->db->execute();
     }
 
     /**
      * Delete vehicle
      */
     public function deleteVehicle($id) {
-        $this->query('DELETE FROM vehicles WHERE id = :id');
-        $this->bind(':id', $id);
-        return $this->execute();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query('DELETE FROM vehicles WHERE id = :id AND ' . $filter);
+        $this->db->bind(':id', $id);
+        $this->bindCompanyId();
+        return $this->db->execute();
     }
 
     /**
      * Count total vehicles
      */
     public function countVehicles() {
-        $this->query('SELECT COUNT(*) as total FROM vehicles');
-        $result = $this->fetch();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT COUNT(*) as total FROM vehicles v WHERE {$filter}");
+        $this->bindCompanyId();
+        $result = $this->db->fetch();
         return $result['total'];
     }
 
@@ -182,9 +228,11 @@ class Vehicle extends Database {
      * Count vehicles by status
      */
     public function countVehiclesByStatus($status) {
-        $this->query('SELECT COUNT(*) as total FROM vehicles WHERE status = :status');
-        $this->bind(':status', $status);
-        $result = $this->fetch();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT COUNT(*) as total FROM vehicles v WHERE v.status = :status AND {$filter}");
+        $this->db->bind(':status', $status);
+        $this->bindCompanyId();
+        $result = $this->db->fetch();
         return $result['total'];
     }
 
@@ -192,26 +240,48 @@ class Vehicle extends Database {
      * Get vehicles with expiring documents
      */
     public function getVehiclesWithExpiringDocuments($days = 30) {
-        $this->query('SELECT * FROM vehicles
-                      WHERE (insurance_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY))
-                         OR (registration_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY))
-                         OR (technical_control_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY))
-                      ORDER BY insurance_expiry, registration_expiry, technical_control_expiry');
-        $this->bind(':days', $days);
-        return $this->fetchAll();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT * FROM vehicles v
+                      WHERE {$filter}
+                      AND ((v.insurance_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY))
+                         OR (v.registration_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY))
+                         OR (v.technical_control_expiry BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY)))
+                      ORDER BY v.insurance_expiry, v.registration_expiry, v.technical_control_expiry");
+        $this->bindCompanyId();
+        $this->db->bind(':days', $days);
+        return $this->db->fetchAll();
     }
 
     /**
      * Search vehicles
      */
     public function searchVehicles($keyword) {
-        $this->query('SELECT * FROM vehicles
-                      WHERE registration_number LIKE :keyword
-                         OR vin LIKE :keyword
-                         OR brand LIKE :keyword
-                         OR model LIKE :keyword
-                      ORDER BY registration_number');
-        $this->bind(':keyword', '%' . $keyword . '%');
-        return $this->fetchAll();
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT * FROM vehicles v
+                      WHERE {$filter}
+                      AND (v.registration_number LIKE :keyword
+                         OR v.vin LIKE :keyword
+                         OR v.brand LIKE :keyword
+                         OR v.model LIKE :keyword)
+                      ORDER BY v.registration_number");
+        $this->bindCompanyId();
+        $this->db->bind(':keyword', '%' . $keyword . '%');
+        return $this->db->fetchAll();
+    }
+
+    /**
+     * Get dashboard stats
+     */
+    public function getDashboardStats() {
+        $filter = $this->getCompanyFilter('v');
+        $this->db->query("SELECT
+            COUNT(*) as total_vehicles,
+            SUM(CASE WHEN v.status = 'active' THEN 1 ELSE 0 END) as active_vehicles,
+            SUM(CASE WHEN v.status = 'maintenance' THEN 1 ELSE 0 END) as in_maintenance,
+            SUM(CASE WHEN v.status = 'repair' THEN 1 ELSE 0 END) as in_repair,
+            SUM(CASE WHEN v.status = 'inactive' THEN 1 ELSE 0 END) as inactive_vehicles
+            FROM vehicles v WHERE {$filter}");
+        $this->bindCompanyId();
+        return $this->db->fetch();
     }
 }

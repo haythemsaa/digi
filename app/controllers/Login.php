@@ -74,6 +74,14 @@ class Login extends Controller {
         $_SESSION['last_name'] = $user['last_name'];
         $_SESSION['role'] = $user['role'];
 
+        // Multi-tenant: Load company context
+        if (isset($user['company_id']) && $user['company_id']) {
+            loadCompanyIntoSession($user['company_id']);
+        }
+
+        // Super admin flag
+        $_SESSION['is_super_admin'] = isset($user['is_super_admin']) && $user['is_super_admin'] == 1;
+
         $this->redirect('dashboard');
     }
 
@@ -87,6 +95,10 @@ class Login extends Controller {
         unset($_SESSION['first_name']);
         unset($_SESSION['last_name']);
         unset($_SESSION['role']);
+
+        // Clear multi-tenant session data
+        clearCompanyFromSession();
+        unset($_SESSION['is_super_admin']);
 
         session_destroy();
         $this->redirect('login');
