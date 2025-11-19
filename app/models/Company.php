@@ -132,7 +132,7 @@ class Company {
      * Update company
      */
     public function updateCompany($id, $data) {
-        $this->db->query("UPDATE companies SET
+        $sql = "UPDATE companies SET
             company_name = :company_name,
             legal_name = :legal_name,
             tax_id = :tax_id,
@@ -162,8 +162,19 @@ class Company {
             logo = :logo,
             primary_color = :primary_color,
             secondary_color = :secondary_color,
-            notes = :notes
-            WHERE id = :id");
+            subscription_plan = :subscription_plan,
+            subscription_status = :subscription_status,
+            status = :status,
+            notes = :notes";
+
+        // Add trial_ends_at if provided
+        if (isset($data['trial_ends_at'])) {
+            $sql .= ", trial_ends_at = :trial_ends_at";
+        }
+
+        $sql .= " WHERE id = :id";
+
+        $this->db->query($sql);
 
         $this->db->bind(':id', $id);
         $this->db->bind(':company_name', $data['company_name']);
@@ -201,7 +212,15 @@ class Company {
         $this->db->bind(':primary_color', $data['primary_color'] ?? '#007bff');
         $this->db->bind(':secondary_color', $data['secondary_color'] ?? '#6c757d');
 
+        $this->db->bind(':subscription_plan', $data['subscription_plan'] ?? 'starter');
+        $this->db->bind(':subscription_status', $data['subscription_status'] ?? 'trial');
+        $this->db->bind(':status', $data['status'] ?? 'active');
+
         $this->db->bind(':notes', $data['notes'] ?? null);
+
+        if (isset($data['trial_ends_at'])) {
+            $this->db->bind(':trial_ends_at', $data['trial_ends_at']);
+        }
 
         return $this->db->execute();
     }
@@ -309,5 +328,86 @@ class Company {
             ORDER BY trial_ends_at ASC");
         $this->db->bind(':days', $days);
         return $this->db->fetchAll();
+    }
+
+    /**
+     * Check if company code exists
+     */
+    public function companyCodeExists($code, $excludeId = null) {
+        $sql = "SELECT COUNT(*) as count FROM companies WHERE company_code = :code";
+
+        if ($excludeId) {
+            $sql .= " AND id != :id";
+        }
+
+        $this->db->query($sql);
+        $this->db->bind(':code', $code);
+
+        if ($excludeId) {
+            $this->db->bind(':id', $excludeId);
+        }
+
+        $result = $this->db->fetch();
+        return $result['count'] > 0;
+    }
+
+    /**
+     * Extend trial period
+     */
+    public function extendTrial($id, $days = 30) {
+        $this->db->query("UPDATE companies SET
+            trial_ends_at = DATE_ADD(IFNULL(trial_ends_at, CURDATE()), INTERVAL :days DAY)
+            WHERE id = :id");
+
+        $this->db->bind(':id', $id);
+        $this->db->bind(':days', $days);
+
+        return $this->db->execute();
+    }
+
+    /**
+     * Get global statistics across all companies
+     */
+    public function getGlobalStats() {
+        $this->db->query("SELECT
+            (SELECT COUNT(*) FROM companies WHERE status = 'active') as active_companies,
+            (SELECT COUNT(*) FROM companies WHERE status = 'inactive') as inactive_companies,
+            (SELECT COUNT(*) FROM companies WHERE status = 'suspended') as suspended_companies,
+            (SELECT COUNT(*) FROM companies WHERE subscription_status = 'trial') as trial_companies,
+            (SELECT COUNT(*) FROM companies WHERE subscription_status = 'active') as subscribed_companies,
+            (SELECT COUNT(*) FROM users) as total_users,
+            (SELECT COUNT(*) FROM vehicles) as total_vehicles,
+            (SELECT COUNT(*) FROM drivers) as total_drivers
+        ");
+
+        return $this->db->fetch();
+    }
+
+    /**
+     * Update company logo
+     */
+    public function updateLogo($id, $logoPath) {
+        $this->db->query("UPDATE companies SET logo = :logo WHERE id = :id");
+        $this->db->bind(':id', $id);
+        $this->db->bind(':logo', $logoPath);
+        return $this->db->execute();
+    }
+
+    /**
+     * Update company branding
+     */
+    public function updateBranding($id, $logo, $primaryColor, $secondaryColor = null) {
+        $this->db->query("UPDATE companies SET
+            logo = :logo,
+            primary_color = :primary_color,
+            secondary_color = :secondary_color
+            WHERE id = :id");
+
+        $this->db->bind(':id', $id);
+        $this->db->bind(':logo', $logo);
+        $this->db->bind(':primary_color', $primaryColor);
+        $this->db->bind(':secondary_color', $secondaryColor);
+
+        return $this->db->execute();
     }
 }

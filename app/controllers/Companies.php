@@ -90,18 +90,20 @@ class Companies extends Controller {
             'max_vehicles' => 10,
             'max_drivers' => 10,
             'subscription_plan' => 'starter',
+            'subscription_status' => 'trial',
             'trial_days' => 30,
+            'currency' => 'TND',
+            'timezone' => 'Africa/Tunis',
+            'language' => 'fr',
+            'primary_color' => '#007bff',
             'errors' => []
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-
-            // Populate data array
+            // Populate data array (don't sanitize FILES)
             $data['company_name'] = trim($_POST['company_name']);
-            $data['legal_name'] = trim($_POST['legal_name']);
-            $data['company_code'] = trim($_POST['company_code']);
+            $data['legal_name'] = trim($_POST['legal_name'] ?? '');
+            $data['company_code'] = trim($_POST['company_code'] ?? '');
             $data['business_type'] = trim($_POST['business_type'] ?? '');
             $data['registration_number'] = trim($_POST['registration_number'] ?? '');
             $data['tax_id'] = trim($_POST['tax_id'] ?? '');
@@ -116,7 +118,17 @@ class Companies extends Controller {
             $data['max_vehicles'] = intval($_POST['max_vehicles'] ?? 10);
             $data['max_drivers'] = intval($_POST['max_drivers'] ?? 10);
             $data['subscription_plan'] = trim($_POST['subscription_plan'] ?? 'starter');
+            $data['subscription_status'] = trim($_POST['subscription_status'] ?? 'trial');
             $data['trial_days'] = intval($_POST['trial_days'] ?? 30);
+            $data['currency'] = trim($_POST['currency'] ?? 'TND');
+            $data['timezone'] = trim($_POST['timezone'] ?? 'Africa/Tunis');
+            $data['language'] = trim($_POST['language'] ?? 'fr');
+            $data['primary_color'] = trim($_POST['primary_color'] ?? '#007bff');
+
+            // Calculate trial end date
+            if ($data['subscription_status'] === 'trial' && $data['trial_days'] > 0) {
+                $data['trial_ends_at'] = date('Y-m-d', strtotime('+' . $data['trial_days'] . ' days'));
+            }
 
             // Validate
             if (empty($data['company_name'])) {
@@ -132,6 +144,17 @@ class Companies extends Controller {
             // Check if company code already exists
             if (!empty($data['company_code']) && $this->companyModel->companyCodeExists($data['company_code'])) {
                 $data['errors']['company_code'] = 'Ce code entreprise existe déjà';
+            }
+
+            // Handle logo upload
+            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $this->handleLogoUpload($_FILES['logo']);
+
+                if ($uploadResult['success']) {
+                    $data['logo'] = $uploadResult['path'];
+                } else {
+                    $data['errors']['logo'] = $uploadResult['error'];
+                }
             }
 
             // If no errors, create company
@@ -161,21 +184,22 @@ class Companies extends Controller {
             $this->redirect('companies');
         }
 
+        // Get company stats for display
+        $stats = $this->companyModel->getCompanyStats($id);
+
         $data = [
             'title' => 'Modifier Entreprise - ' . $company['company_name'],
             'company' => $company,
+            'stats' => $stats,
             'errors' => []
         ];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize POST data
-            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-
-            // Build update data array
+            // Build update data array (don't sanitize FILE data)
             $updateData = [
                 'company_name' => trim($_POST['company_name']),
-                'legal_name' => trim($_POST['legal_name']),
-                'company_code' => trim($_POST['company_code']),
+                'legal_name' => trim($_POST['legal_name'] ?? ''),
+                'company_code' => $company['company_code'], // Code cannot be changed
                 'business_type' => trim($_POST['business_type'] ?? ''),
                 'registration_number' => trim($_POST['registration_number'] ?? ''),
                 'tax_id' => trim($_POST['tax_id'] ?? ''),
@@ -191,8 +215,18 @@ class Companies extends Controller {
                 'max_drivers' => intval($_POST['max_drivers'] ?? 10),
                 'subscription_plan' => trim($_POST['subscription_plan'] ?? 'starter'),
                 'subscription_status' => trim($_POST['subscription_status'] ?? 'active'),
-                'status' => trim($_POST['status'] ?? 'active')
+                'status' => trim($_POST['status'] ?? 'active'),
+                'currency' => trim($_POST['currency'] ?? 'TND'),
+                'timezone' => trim($_POST['timezone'] ?? 'Africa/Tunis'),
+                'language' => trim($_POST['language'] ?? 'fr'),
+                'primary_color' => trim($_POST['primary_color'] ?? '#007bff'),
+                'logo' => $company['logo'] // Keep existing logo by default
             ];
+
+            // Handle trial end date if provided
+            if (!empty($_POST['trial_ends_at'])) {
+                $updateData['trial_ends_at'] = $_POST['trial_ends_at'];
+            }
 
             // Validate
             if (empty($updateData['company_name'])) {
@@ -205,11 +239,15 @@ class Companies extends Controller {
                 $data['errors']['email'] = 'Email invalide';
             }
 
-            // Check if company code already exists (excluding current company)
-            if (!empty($updateData['company_code']) &&
-                $updateData['company_code'] !== $company['company_code'] &&
-                $this->companyModel->companyCodeExists($updateData['company_code'])) {
-                $data['errors']['company_code'] = 'Ce code entreprise existe déjà';
+            // Handle logo upload
+            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $this->handleLogoUpload($_FILES['logo']);
+
+                if ($uploadResult['success']) {
+                    $updateData['logo'] = $uploadResult['path'];
+                } else {
+                    $data['errors']['logo'] = $uploadResult['error'];
+                }
             }
 
             // If no errors, update company
@@ -226,6 +264,41 @@ class Companies extends Controller {
         }
 
         $this->view('companies/edit', $data);
+    }
+
+    /**
+     * Handle logo file upload
+     */
+    private function handleLogoUpload($file) {
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            return ['success' => false, 'error' => 'Format de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP'];
+        }
+
+        // Validate file size (2MB max)
+        if ($file['size'] > 2 * 1024 * 1024) {
+            return ['success' => false, 'error' => 'Le fichier est trop volumineux. Maximum 2MB'];
+        }
+
+        // Create upload directory if it doesn't exist
+        $uploadDir = APP_PATH . '/public/uploads/logos';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'company_' . uniqid() . '_' . time() . '.' . $extension;
+        $uploadPath = $uploadDir . '/' . $filename;
+
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            // Return relative path for database storage
+            return ['success' => true, 'path' => '/uploads/logos/' . $filename];
+        }
+
+        return ['success' => false, 'error' => 'Erreur lors du téléchargement du fichier'];
     }
 
     /**
