@@ -1477,3 +1477,446 @@ INSERT INTO `ai_optimization_settings` (`setting_name`, `algorithm_type`, `param
 INSERT INTO `vehicle_delivery_capacity` (`vehicle_id`, `cargo_length`, `cargo_width`, `cargo_height`, `cargo_volume`, `max_weight`, `max_packages`) VALUES
 (1, 300, 180, 180, 9.72, 1500, 50),
 (2, 400, 200, 200, 16.00, 3000, 100);
+
+-- ============================================================================
+-- PASSENGER TRANSPORT MODULE (TAXI & BUS)
+-- ============================================================================
+
+-- Passenger/Customer Management
+CREATE TABLE IF NOT EXISTS `passengers` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `customer_code` VARCHAR(50) UNIQUE NOT NULL,
+  `first_name` VARCHAR(50) NOT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `phone` VARCHAR(20) NOT NULL,
+  `email` VARCHAR(100),
+  `id_card_number` VARCHAR(50),
+  `address` TEXT,
+  `city` VARCHAR(100),
+  `postal_code` VARCHAR(20),
+  `date_of_birth` DATE,
+  `gender` ENUM('male', 'female', 'other'),
+  `photo` VARCHAR(255),
+  `rating` DECIMAL(3,2) COMMENT 'Average rating 0-5',
+  `total_trips` INT(11) DEFAULT 0,
+  `loyalty_points` INT(11) DEFAULT 0,
+  `preferred_payment_method` ENUM('cash', 'card', 'mobile_money', 'account') DEFAULT 'cash',
+  `notes` TEXT,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_phone` (`phone`),
+  KEY `idx_email` (`email`),
+  KEY `idx_customer_code` (`customer_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Transport Vehicle Types (extends vehicles table)
+CREATE TABLE IF NOT EXISTS `transport_vehicles` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `vehicle_id` INT(11) UNSIGNED NOT NULL,
+  `transport_type` ENUM('taxi', 'bus', 'minibus', 'shuttle') NOT NULL,
+  `license_plate` VARCHAR(20) NOT NULL,
+  `taxi_license_number` VARCHAR(50) COMMENT 'Taxi license/permit number',
+  `passenger_capacity` INT(11) NOT NULL DEFAULT 4,
+  `has_ac` BOOLEAN DEFAULT TRUE,
+  `has_gps` BOOLEAN DEFAULT TRUE,
+  `has_meter` BOOLEAN DEFAULT TRUE COMMENT 'Taxi meter',
+  `accessibility_features` TEXT COMMENT 'Wheelchair access, etc.',
+  `comfort_class` ENUM('economy', 'standard', 'comfort', 'premium', 'luxury') DEFAULT 'standard',
+  `color` VARCHAR(50),
+  `interior_features` TEXT COMMENT 'WiFi, USB charging, etc.',
+  `current_odometer` INT(11) COMMENT 'Current mileage in km',
+  `is_available` BOOLEAN DEFAULT TRUE,
+  `status` ENUM('active', 'maintenance', 'out_of_service', 'retired') DEFAULT 'active',
+  `last_inspection_date` DATE,
+  `next_inspection_due` DATE,
+  `insurance_expiry` DATE,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_type` (`transport_type`),
+  KEY `idx_available` (`is_available`),
+  FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Driver profiles for passenger transport
+CREATE TABLE IF NOT EXISTS `transport_drivers` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) UNSIGNED NOT NULL,
+  `driver_license_number` VARCHAR(50) NOT NULL,
+  `license_type` VARCHAR(20) COMMENT 'B, D, etc.',
+  `license_expiry` DATE NOT NULL,
+  `taxi_permit_number` VARCHAR(50),
+  `permit_expiry` DATE,
+  `medical_certificate_expiry` DATE,
+  `background_check_date` DATE,
+  `languages_spoken` VARCHAR(255),
+  `rating` DECIMAL(3,2) DEFAULT 5.00 COMMENT 'Average rating 0-5',
+  `total_trips` INT(11) DEFAULT 0,
+  `total_distance_km` DECIMAL(10,2) DEFAULT 0,
+  `years_experience` INT(11),
+  `specializations` TEXT COMMENT 'Wheelchair accessible, night shift, etc.',
+  `current_vehicle_id` INT(11) UNSIGNED,
+  `current_status` ENUM('available', 'on_trip', 'break', 'off_duty', 'offline') DEFAULT 'offline',
+  `current_latitude` DECIMAL(10,8),
+  `current_longitude` DECIMAL(11,8),
+  `last_location_update` TIMESTAMP,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `hire_date` DATE,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_status` (`current_status`),
+  KEY `idx_vehicle` (`current_vehicle_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`current_vehicle_id`) REFERENCES `transport_vehicles`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bus Routes/Lines
+CREATE TABLE IF NOT EXISTS `bus_routes` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `route_number` VARCHAR(20) UNIQUE NOT NULL,
+  `route_name` VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `start_point` VARCHAR(100) NOT NULL,
+  `end_point` VARCHAR(100) NOT NULL,
+  `route_type` ENUM('urban', 'suburban', 'intercity', 'express', 'shuttle') DEFAULT 'urban',
+  `total_distance_km` DECIMAL(8,2),
+  `estimated_duration_minutes` INT(11),
+  `base_fare` DECIMAL(8,2),
+  `fare_per_km` DECIMAL(8,2),
+  `is_circular` BOOLEAN DEFAULT FALSE COMMENT 'Returns to start point',
+  `operates_weekdays` BOOLEAN DEFAULT TRUE,
+  `operates_weekends` BOOLEAN DEFAULT TRUE,
+  `operates_holidays` BOOLEAN DEFAULT FALSE,
+  `first_departure` TIME,
+  `last_departure` TIME,
+  `frequency_minutes` INT(11) COMMENT 'Average time between buses',
+  `status` ENUM('active', 'seasonal', 'suspended', 'discontinued') DEFAULT 'active',
+  `color_code` VARCHAR(7) COMMENT 'Hex color for maps',
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_route_number` (`route_number`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bus Stops
+CREATE TABLE IF NOT EXISTS `bus_stops` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `stop_code` VARCHAR(20) UNIQUE NOT NULL,
+  `stop_name` VARCHAR(100) NOT NULL,
+  `address` TEXT,
+  `latitude` DECIMAL(10,8) NOT NULL,
+  `longitude` DECIMAL(11,8) NOT NULL,
+  `zone` VARCHAR(50) COMMENT 'Pricing zone',
+  `has_shelter` BOOLEAN DEFAULT FALSE,
+  `has_bench` BOOLEAN DEFAULT FALSE,
+  `has_lighting` BOOLEAN DEFAULT FALSE,
+  `is_accessible` BOOLEAN DEFAULT FALSE COMMENT 'Wheelchair accessible',
+  `nearby_landmarks` TEXT,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_stop_code` (`stop_code`),
+  KEY `idx_zone` (`zone`),
+  KEY `idx_coordinates` (`latitude`, `longitude`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Route Stops (junction table)
+CREATE TABLE IF NOT EXISTS `route_stops` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `route_id` INT(11) UNSIGNED NOT NULL,
+  `stop_id` INT(11) UNSIGNED NOT NULL,
+  `stop_sequence` INT(11) NOT NULL COMMENT 'Order in route',
+  `distance_from_start_km` DECIMAL(8,2),
+  `estimated_minutes_from_start` INT(11),
+  `fare_from_start` DECIMAL(8,2),
+  `is_major_stop` BOOLEAN DEFAULT FALSE COMMENT 'Important interchange point',
+  `dwell_time_seconds` INT(11) DEFAULT 30 COMMENT 'Time stopped',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_route_stop` (`route_id`, `stop_id`),
+  KEY `idx_route` (`route_id`),
+  KEY `idx_stop` (`stop_id`),
+  KEY `idx_sequence` (`stop_sequence`),
+  FOREIGN KEY (`route_id`) REFERENCES `bus_routes`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`stop_id`) REFERENCES `bus_stops`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bus Schedules
+CREATE TABLE IF NOT EXISTS `bus_schedules` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `route_id` INT(11) UNSIGNED NOT NULL,
+  `vehicle_id` INT(11) UNSIGNED,
+  `driver_id` INT(11) UNSIGNED,
+  `schedule_date` DATE NOT NULL,
+  `departure_time` TIME NOT NULL,
+  `planned_arrival_time` TIME,
+  `actual_departure_time` TIME,
+  `actual_arrival_time` TIME,
+  `status` ENUM('scheduled', 'departed', 'in_progress', 'completed', 'cancelled', 'delayed') DEFAULT 'scheduled',
+  `delay_minutes` INT(11),
+  `passengers_count` INT(11) DEFAULT 0,
+  `revenue` DECIMAL(10,2),
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_route_date` (`route_id`, `schedule_date`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_driver` (`driver_id`),
+  KEY `idx_status` (`status`),
+  FOREIGN KEY (`route_id`) REFERENCES `bus_routes`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `transport_vehicles`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`driver_id`) REFERENCES `transport_drivers`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Ride Bookings (Taxi & Bus)
+CREATE TABLE IF NOT EXISTS `ride_bookings` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `booking_number` VARCHAR(50) UNIQUE NOT NULL,
+  `passenger_id` INT(11) UNSIGNED NOT NULL,
+  `booking_type` ENUM('taxi', 'bus', 'shuttle', 'corporate') NOT NULL,
+  `ride_type` ENUM('immediate', 'scheduled', 'recurring') DEFAULT 'immediate',
+  `status` ENUM('pending', 'confirmed', 'driver_assigned', 'driver_arrived', 'in_progress', 'completed', 'cancelled', 'no_show') DEFAULT 'pending',
+  `pickup_address` TEXT NOT NULL,
+  `pickup_latitude` DECIMAL(10,8),
+  `pickup_longitude` DECIMAL(11,8),
+  `dropoff_address` TEXT NOT NULL,
+  `dropoff_latitude` DECIMAL(10,8),
+  `dropoff_longitude` DECIMAL(11,8),
+  `scheduled_pickup_time` DATETIME,
+  `actual_pickup_time` DATETIME,
+  `actual_dropoff_time` DATETIME,
+  `passenger_count` INT(11) DEFAULT 1,
+  `vehicle_id` INT(11) UNSIGNED,
+  `driver_id` INT(11) UNSIGNED,
+  `route_id` INT(11) UNSIGNED COMMENT 'For bus bookings',
+  `comfort_class` ENUM('economy', 'standard', 'comfort', 'premium', 'luxury') DEFAULT 'standard',
+  `special_requirements` TEXT COMMENT 'Wheelchair, child seat, etc.',
+  `estimated_distance_km` DECIMAL(8,2),
+  `actual_distance_km` DECIMAL(8,2),
+  `estimated_duration_minutes` INT(11),
+  `actual_duration_minutes` INT(11),
+  `estimated_fare` DECIMAL(10,2),
+  `actual_fare` DECIMAL(10,2),
+  `surge_multiplier` DECIMAL(3,2) DEFAULT 1.00,
+  `discount_amount` DECIMAL(8,2) DEFAULT 0,
+  `final_amount` DECIMAL(10,2),
+  `payment_method` ENUM('cash', 'card', 'mobile_money', 'account', 'voucher') DEFAULT 'cash',
+  `payment_status` ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
+  `paid_at` DATETIME,
+  `passenger_rating` TINYINT(1) COMMENT '1-5 stars',
+  `driver_rating` TINYINT(1) COMMENT '1-5 stars',
+  `passenger_feedback` TEXT,
+  `driver_feedback` TEXT,
+  `cancellation_reason` TEXT,
+  `cancelled_by` ENUM('passenger', 'driver', 'system', 'admin'),
+  `cancelled_at` DATETIME,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking_number` (`booking_number`),
+  KEY `idx_passenger` (`passenger_id`),
+  KEY `idx_driver` (`driver_id`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_booking_type` (`booking_type`),
+  KEY `idx_scheduled_time` (`scheduled_pickup_time`),
+  FOREIGN KEY (`passenger_id`) REFERENCES `passengers`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`driver_id`) REFERENCES `transport_drivers`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `transport_vehicles`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`route_id`) REFERENCES `bus_routes`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Trip waypoints for tracking
+CREATE TABLE IF NOT EXISTS `trip_waypoints` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `booking_id` INT(11) UNSIGNED NOT NULL,
+  `latitude` DECIMAL(10,8) NOT NULL,
+  `longitude` DECIMAL(11,8) NOT NULL,
+  `speed_kmh` DECIMAL(5,2),
+  `heading` DECIMAL(5,2) COMMENT 'Direction in degrees',
+  `altitude` DECIMAL(8,2),
+  `accuracy` DECIMAL(6,2),
+  `recorded_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking` (`booking_id`),
+  KEY `idx_time` (`recorded_at`),
+  FOREIGN KEY (`booking_id`) REFERENCES `ride_bookings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Pricing zones and tariffs
+CREATE TABLE IF NOT EXISTS `pricing_zones` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `zone_name` VARCHAR(100) NOT NULL,
+  `zone_type` ENUM('city', 'suburb', 'airport', 'intercity', 'rural') NOT NULL,
+  `base_fare` DECIMAL(8,2) NOT NULL,
+  `price_per_km` DECIMAL(8,2) NOT NULL,
+  `price_per_minute` DECIMAL(8,2),
+  `minimum_fare` DECIMAL(8,2),
+  `night_surcharge_percent` DECIMAL(5,2) DEFAULT 0 COMMENT 'Extra charge after hours',
+  `night_start_time` TIME DEFAULT '22:00:00',
+  `night_end_time` TIME DEFAULT '06:00:00',
+  `weekend_surcharge_percent` DECIMAL(5,2) DEFAULT 0,
+  `holiday_surcharge_percent` DECIMAL(5,2) DEFAULT 0,
+  `airport_fee` DECIMAL(8,2) DEFAULT 0,
+  `booking_fee` DECIMAL(8,2) DEFAULT 0,
+  `cancellation_fee` DECIMAL(8,2) DEFAULT 0,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `effective_from` DATE,
+  `effective_until` DATE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_zone_name` (`zone_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Payments for transport services
+CREATE TABLE IF NOT EXISTS `transport_payments` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `booking_id` INT(11) UNSIGNED NOT NULL,
+  `payment_reference` VARCHAR(100) UNIQUE,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `payment_method` ENUM('cash', 'card', 'mobile_money', 'bank_transfer', 'voucher', 'account') NOT NULL,
+  `payment_status` ENUM('pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled') DEFAULT 'pending',
+  `transaction_id` VARCHAR(100),
+  `gateway_response` TEXT COMMENT 'JSON response from payment gateway',
+  `card_last_four` VARCHAR(4),
+  `paid_by` INT(11) UNSIGNED COMMENT 'User who made payment',
+  `paid_at` DATETIME,
+  `refund_amount` DECIMAL(10,2),
+  `refunded_at` DATETIME,
+  `refund_reason` TEXT,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking` (`booking_id`),
+  KEY `idx_reference` (`payment_reference`),
+  KEY `idx_status` (`payment_status`),
+  FOREIGN KEY (`booking_id`) REFERENCES `ride_bookings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Driver earnings and commissions
+CREATE TABLE IF NOT EXISTS `driver_earnings` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `driver_id` INT(11) UNSIGNED NOT NULL,
+  `booking_id` INT(11) UNSIGNED NOT NULL,
+  `trip_date` DATE NOT NULL,
+  `gross_fare` DECIMAL(10,2) NOT NULL,
+  `commission_percent` DECIMAL(5,2) DEFAULT 20,
+  `commission_amount` DECIMAL(10,2),
+  `net_earnings` DECIMAL(10,2),
+  `bonus_amount` DECIMAL(8,2) DEFAULT 0,
+  `penalty_amount` DECIMAL(8,2) DEFAULT 0,
+  `final_earnings` DECIMAL(10,2),
+  `payment_status` ENUM('pending', 'paid', 'held') DEFAULT 'pending',
+  `paid_at` DATETIME,
+  `payment_method` ENUM('cash', 'bank_transfer', 'mobile_money'),
+  `payment_reference` VARCHAR(100),
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_driver_date` (`driver_id`, `trip_date`),
+  KEY `idx_booking` (`booking_id`),
+  KEY `idx_status` (`payment_status`),
+  FOREIGN KEY (`driver_id`) REFERENCES `transport_drivers`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`booking_id`) REFERENCES `ride_bookings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Passenger loyalty program
+CREATE TABLE IF NOT EXISTS `loyalty_transactions` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `passenger_id` INT(11) UNSIGNED NOT NULL,
+  `booking_id` INT(11) UNSIGNED,
+  `transaction_type` ENUM('earned', 'redeemed', 'expired', 'bonus', 'adjustment') NOT NULL,
+  `points` INT(11) NOT NULL COMMENT 'Positive for earn, negative for redeem',
+  `balance_after` INT(11),
+  `description` VARCHAR(255),
+  `expires_at` DATE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_passenger` (`passenger_id`),
+  KEY `idx_booking` (`booking_id`),
+  FOREIGN KEY (`passenger_id`) REFERENCES `passengers`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`booking_id`) REFERENCES `ride_bookings`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Emergency contacts for passengers
+CREATE TABLE IF NOT EXISTS `passenger_emergency_contacts` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `passenger_id` INT(11) UNSIGNED NOT NULL,
+  `contact_name` VARCHAR(100) NOT NULL,
+  `relationship` VARCHAR(50),
+  `phone` VARCHAR(20) NOT NULL,
+  `email` VARCHAR(100),
+  `is_primary` BOOLEAN DEFAULT FALSE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_passenger` (`passenger_id`),
+  FOREIGN KEY (`passenger_id`) REFERENCES `passengers`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- SOS/Emergency alerts
+CREATE TABLE IF NOT EXISTS `emergency_alerts` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `booking_id` INT(11) UNSIGNED NOT NULL,
+  `triggered_by` ENUM('passenger', 'driver', 'system') NOT NULL,
+  `alert_type` ENUM('sos', 'accident', 'medical', 'security', 'vehicle_issue', 'route_deviation') NOT NULL,
+  `latitude` DECIMAL(10,8),
+  `longitude` DECIMAL(11,8),
+  `description` TEXT,
+  `status` ENUM('active', 'acknowledged', 'resolved', 'false_alarm') DEFAULT 'active',
+  `responded_by` INT(11) UNSIGNED COMMENT 'Admin who responded',
+  `response_notes` TEXT,
+  `resolved_at` DATETIME,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking` (`booking_id`),
+  KEY `idx_status` (`status`),
+  FOREIGN KEY (`booking_id`) REFERENCES `ride_bookings`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Driver shifts and working hours
+CREATE TABLE IF NOT EXISTS `driver_shifts` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `driver_id` INT(11) UNSIGNED NOT NULL,
+  `vehicle_id` INT(11) UNSIGNED,
+  `shift_date` DATE NOT NULL,
+  `shift_type` ENUM('morning', 'afternoon', 'evening', 'night', 'full_day') NOT NULL,
+  `planned_start` TIME NOT NULL,
+  `planned_end` TIME NOT NULL,
+  `actual_start` DATETIME,
+  `actual_end` DATETIME,
+  `break_duration_minutes` INT(11) DEFAULT 0,
+  `total_trips` INT(11) DEFAULT 0,
+  `total_distance_km` DECIMAL(10,2) DEFAULT 0,
+  `total_revenue` DECIMAL(10,2) DEFAULT 0,
+  `status` ENUM('scheduled', 'active', 'completed', 'absent', 'sick_leave') DEFAULT 'scheduled',
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_driver_date` (`driver_id`, `shift_date`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  FOREIGN KEY (`driver_id`) REFERENCES `transport_drivers`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`vehicle_id`) REFERENCES `transport_vehicles`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default pricing zones
+INSERT INTO `pricing_zones` (`zone_name`, `zone_type`, `base_fare`, `price_per_km`, `price_per_minute`, `minimum_fare`, `night_surcharge_percent`, `weekend_surcharge_percent`, `is_active`) VALUES
+('Tunis Centre', 'city', 3.00, 0.80, 0.10, 5.00, 25, 10, TRUE),
+('Banlieue', 'suburb', 5.00, 1.00, 0.15, 7.00, 30, 15, TRUE),
+('Aéroport Carthage', 'airport', 10.00, 1.20, 0.20, 15.00, 20, 10, TRUE),
+('Intercity', 'intercity', 15.00, 1.50, 0.25, 25.00, 50, 20, TRUE);

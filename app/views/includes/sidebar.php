@@ -128,6 +128,14 @@
                     </a>
                 </li>
 
+                <!-- Passenger Transport (Taxi & Bus) -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'passenger_transport') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/passenger_transport">
+                        <i class="fas fa-taxi"></i> Transport Voyageurs
+                    </a>
+                </li>
+
                 <!-- Reports -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'reports') ? 'active' : ''; ?>"
