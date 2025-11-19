@@ -1,4 +1,4 @@
-# 🚀 Déploiement Rapide - DigiParc Fleet Management v3.0.0
+# 🚀 Déploiement Rapide - Pakiparc Fleet Management v3.0.0
 
 ## Installation EN 5 MINUTES ! ⚡
 
@@ -30,10 +30,10 @@ sudo apt-get install -y apache2 mysql-server php8.1 php8.1-mysql php8.1-mbstring
     php8.1-curl php8.1-gd php8.1-xml php8.1-zip php8.1-intl composer
 
 # 3. Configurer la base de données
-sudo mysql -e "CREATE DATABASE digiparc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "CREATE USER 'digiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse';"
-sudo mysql -e "GRANT ALL ON digiparc.* TO 'digiparc_user'@'localhost';"
-sudo mysql digiparc < database/schema.sql
+sudo mysql -e "CREATE DATABASE pakiparc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+sudo mysql -e "CREATE USER 'pakiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse';"
+sudo mysql -e "GRANT ALL ON pakiparc.* TO 'pakiparc_user'@'localhost';"
+sudo mysql pakiparc < database/schema.sql
 
 # 4. Configurer l'application
 cp .env.example .env
@@ -43,8 +43,8 @@ nano .env  # Modifier DB_NAME, DB_USER, DB_PASS
 composer install --no-dev --optimize-autoloader
 
 # 6. Configurer Apache
-sudo cp config/apache/digiparc.conf /etc/apache2/sites-available/
-sudo a2ensite digiparc
+sudo cp config/apache/pakiparc.conf /etc/apache2/sites-available/
+sudo a2ensite pakiparc
 sudo a2enmod rewrite
 sudo systemctl restart apache2
 
@@ -76,7 +76,7 @@ cd digi
 sudo bash install.sh
 
 # Configurer le domaine
-sudo nano /etc/apache2/sites-available/digiparc.conf
+sudo nano /etc/apache2/sites-available/pakiparc.conf
 # Modifier ServerName avec votre domaine
 
 # Redémarrer Apache
@@ -191,13 +191,13 @@ sudo systemctl status mysql
 
 # Logs
 tail -f var/log/php-error.log
-tail -f /var/log/apache2/digiparc-error.log
+tail -f /var/log/apache2/pakiparc-error.log
 
 # Espace disque
 df -h
 
 # Sauvegardes
-ls -lh /var/backups/digiparc/
+ls -lh /var/backups/pakiparc/
 ```
 
 ### Maintenance Régulière
@@ -244,7 +244,7 @@ sudo apache2ctl configtest
 
 ```bash
 # Tester la connexion
-mysql -u digiparc_user -p digiparc
+mysql -u pakiparc_user -p pakiparc
 
 # Vérifier les credentials dans .env
 cat .env | grep DB_
@@ -275,7 +275,7 @@ tail -f var/log/cron-alerts.log
 
 ### Identifiants par Défaut
 
-- **Email**: `admin@digiparc.com`
+- **Email**: `admin@pakiparc.com`
 - **Mot de passe**: Celui que vous avez défini lors de l'installation
 
 ⚠️ **IMPORTANT**: Changez le mot de passe immédiatement après la première connexion !
@@ -293,8 +293,8 @@ tail -f var/log/cron-alerts.log
 ### Obtenir de l'Aide
 
 - **Issues GitHub**: https://github.com/haythemsaa/digi/issues
-- **Email**: support@digiparc.com
-- **Documentation en ligne**: https://docs.digiparc.com
+- **Email**: support@pakiparc.com
+- **Documentation en ligne**: https://docs.pakiparc.com
 
 ---
 
@@ -321,7 +321,7 @@ tail -f var/log/cron-alerts.log
 
 ## 🚀 C'est Parti !
 
-Votre application **DigiParc Fleet Management v3.0.0** est maintenant **EN LIGNE** ! 🎉
+Votre application **Pakiparc Fleet Management v3.0.0** est maintenant **EN LIGNE** ! 🎉
 
 **Prochaines étapes**:
 
@@ -345,6 +345,6 @@ Votre application **DigiParc Fleet Management v3.0.0** est maintenant **EN LIGNE
 
 ---
 
-**Made with ❤️ by DigiParc Team**
+**Made with ❤️ by Pakiparc Team**
 
 *Version 3.0.0 Enterprise Edition | 2025*

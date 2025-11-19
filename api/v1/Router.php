@@ -4,7 +4,7 @@
  * API Router
  * Handles routing for REST API requests
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class APIRouter

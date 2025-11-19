@@ -1,5 +1,5 @@
 /**
- * DigiParc Driver App - Local Storage Manager
+ * Pakiparc Driver App - Local Storage Manager
  */
 
 class StorageManager {

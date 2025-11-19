@@ -1,4 +1,4 @@
--- DigiParc Fleet Management System - Database Schema
+-- Pakiparc Fleet Management System - Database Schema
 -- Complete database structure for all modules
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -773,7 +773,7 @@ CREATE TABLE IF NOT EXISTS `audit_log` (
 
 -- Default admin user (password: admin123 - hashed with bcrypt)
 INSERT INTO `users` (`username`, `email`, `password`, `first_name`, `last_name`, `role`, `status`) VALUES
-('admin', 'admin@digiparc.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'DigiParc', 'admin', 'active');
+('admin', 'admin@pakiparc.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'Pakiparc', 'admin', 'active');
 
 -- Default maintenance types
 INSERT INTO `maintenance_types` (`name`, `description`, `category`) VALUES
@@ -787,7 +787,7 @@ INSERT INTO `maintenance_types` (`name`, `description`, `category`) VALUES
 
 -- Default settings
 INSERT INTO `settings` (`setting_key`, `setting_value`, `setting_type`, `description`) VALUES
-('company_name', 'DigiParc Fleet Management', 'string', 'Company name'),
+('company_name', 'Pakiparc Fleet Management', 'string', 'Company name'),
 ('currency', 'TND', 'string', 'Default currency'),
 ('date_format', 'Y-m-d', 'string', 'Date format'),
 ('timezone', 'Africa/Tunis', 'string', 'Default timezone'),

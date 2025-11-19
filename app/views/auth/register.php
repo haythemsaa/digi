@@ -66,7 +66,7 @@
         <div class="register-card">
             <div class="register-header">
                 <h2 class="mb-1"><i class="fas fa-user-plus me-2"></i>Create Account</h2>
-                <p class="mb-0">Join DigiParc Fleet Management</p>
+                <p class="mb-0">Join Pakiparc Fleet Management</p>
             </div>
 
             <div class="register-body">

@@ -1,7 +1,7 @@
 {
-  "name": "DigiParc Driver - Application Chauffeur",
-  "short_name": "DigiParc Driver",
-  "description": "Application mobile pour les chauffeurs DigiParc Fleet Management",
+  "name": "Pakiparc Driver - Application Chauffeur",
+  "short_name": "Pakiparc Driver",
+  "description": "Application mobile pour les chauffeurs Pakiparc Fleet Management",
   "start_url": "/mobile-driver-app/",
   "display": "standalone",
   "background_color": "#667eea",

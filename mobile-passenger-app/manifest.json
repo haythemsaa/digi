@@ -1,7 +1,7 @@
 {
-  "name": "DigiParc Transport - Passagers",
-  "short_name": "DigiParc",
-  "description": "Réservez votre taxi ou bus facilement avec DigiParc Transport",
+  "name": "Pakiparc Transport - Passagers",
+  "short_name": "Pakiparc",
+  "description": "Réservez votre taxi ou bus facilement avec Pakiparc Transport",
   "start_url": "/mobile-passenger-app/",
   "display": "standalone",
   "background_color": "#ffffff",

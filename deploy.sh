@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# DigiParc Fleet Management - Script de Déploiement Production
+# Pakiparc Fleet Management - Script de Déploiement Production
 # Version 3.0.0
 #
 # Ce script déploie automatiquement l'application sur un serveur de production
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 # Configuration
 PROJECT_DIR=$(pwd)
-BACKUP_DIR="/var/backups/digiparc-deployments"
+BACKUP_DIR="/var/backups/pakiparc-deployments"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 ###############################################################################
@@ -82,7 +82,7 @@ backup_current_version() {
     mkdir -p "$BACKUP_DIR"
 
     # Backup files
-    tar -czf "$BACKUP_DIR/digiparc-$TIMESTAMP.tar.gz" \
+    tar -czf "$BACKUP_DIR/pakiparc-$TIMESTAMP.tar.gz" \
         --exclude='.git' \
         --exclude='node_modules' \
         --exclude='vendor' \
@@ -95,10 +95,10 @@ backup_current_version() {
         DB_USER=$(php -r "require 'config/config.php'; echo DB_USER;")
         DB_PASS=$(php -r "require 'config/config.php'; echo DB_PASS;")
 
-        mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" | gzip > "$BACKUP_DIR/digiparc-db-$TIMESTAMP.sql.gz"
+        mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" | gzip > "$BACKUP_DIR/pakiparc-db-$TIMESTAMP.sql.gz"
     fi
 
-    success "Sauvegarde créée: $BACKUP_DIR/digiparc-$TIMESTAMP.tar.gz"
+    success "Sauvegarde créée: $BACKUP_DIR/pakiparc-$TIMESTAMP.tar.gz"
 }
 
 ###############################################################################
@@ -114,7 +114,7 @@ enable_maintenance_mode() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance - DigiParc</title>
+    <title>Maintenance - Pakiparc</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -140,7 +140,7 @@ enable_maintenance_mode() {
     <div class="container">
         <div class="icon">🔧</div>
         <h1>Maintenance en cours</h1>
-        <p>Nous mettons à jour DigiParc Fleet Management.<br>L'application sera de retour dans quelques minutes.</p>
+        <p>Nous mettons à jour Pakiparc Fleet Management.<br>L'application sera de retour dans quelques minutes.</p>
         <p style="font-size: 0.9rem;">Merci de votre patience !</p>
     </div>
 </body>
@@ -363,15 +363,15 @@ rollback() {
     error "Déploiement échoué! Rollback en cours..."
 
     # Restore files
-    if [ -f "$BACKUP_DIR/digiparc-$TIMESTAMP.tar.gz" ]; then
-        tar -xzf "$BACKUP_DIR/digiparc-$TIMESTAMP.tar.gz" -C /tmp/
+    if [ -f "$BACKUP_DIR/pakiparc-$TIMESTAMP.tar.gz" ]; then
+        tar -xzf "$BACKUP_DIR/pakiparc-$TIMESTAMP.tar.gz" -C /tmp/
         rsync -av --delete /tmp/$(basename $PROJECT_DIR)/ "$PROJECT_DIR/"
         success "Fichiers restaurés"
     fi
 
     # Restore database
-    if [ -f "$BACKUP_DIR/digiparc-db-$TIMESTAMP.sql.gz" ]; then
-        gunzip < "$BACKUP_DIR/digiparc-db-$TIMESTAMP.sql.gz" | mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME"
+    if [ -f "$BACKUP_DIR/pakiparc-db-$TIMESTAMP.sql.gz" ]; then
+        gunzip < "$BACKUP_DIR/pakiparc-db-$TIMESTAMP.sql.gz" | mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME"
         success "Base de données restaurée"
     fi
 
@@ -389,7 +389,7 @@ main() {
     cat <<'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                   DÉPLOIEMENT PRODUCTION                     ║
-║                  DigiParc Fleet Management                   ║
+║                  Pakiparc Fleet Management                   ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
 
@@ -422,7 +422,7 @@ EOF
 
     echo ""
     success "Application déployée avec succès!"
-    log "Backup disponible: $BACKUP_DIR/digiparc-$TIMESTAMP.tar.gz"
+    log "Backup disponible: $BACKUP_DIR/pakiparc-$TIMESTAMP.tar.gz"
     echo ""
 }
 

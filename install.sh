@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# DigiParc Fleet Management - Installation Automatique
+# Pakiparc Fleet Management - Installation Automatique
 # Version 3.0.0 - Production Ready
 #
 # Ce script installe TOUT automatiquement en 5 minutes !
@@ -18,8 +18,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR=$(pwd)
-DB_NAME="digiparc"
-DB_USER="digiparc_user"
+DB_NAME="pakiparc"
+DB_USER="pakiparc_user"
 WEB_USER="www-data"
 
 ###############################################################################
@@ -158,8 +158,8 @@ install_dependencies() {
     if [ ! -f "composer.json" ]; then
         cat > composer.json <<'EOF'
 {
-    "name": "digiparc/fleet-management",
-    "description": "DigiParc Fleet Management System",
+    "name": "pakiparc/fleet-management",
+    "description": "Pakiparc Fleet Management System",
     "type": "project",
     "require": {
         "php": ">=8.1",
@@ -271,7 +271,7 @@ define('DB_PASS', '$DB_PASS');
 define('JWT_SECRET', '$JWT_SECRET');
 define('APP_ENV', 'production');
 define('DEBUG', false);
-define('APP_NAME', 'DigiParc Fleet Management');
+define('APP_NAME', 'Pakiparc Fleet Management');
 define('APP_VERSION', '3.0.0');
 define('APP_URL', 'http://$(hostname -I | awk '{print $1}')');
 EOF
@@ -325,7 +325,7 @@ configure_apache() {
     # Create virtual host
     DOMAIN=$(hostname -f)
 
-    cat > /etc/apache2/sites-available/digiparc.conf <<EOF
+    cat > /etc/apache2/sites-available/pakiparc.conf <<EOF
 <VirtualHost *:80>
     ServerName $DOMAIN
     ServerAdmin admin@$DOMAIN
@@ -343,8 +343,8 @@ configure_apache() {
     </Directory>
 
     # Logging
-    ErrorLog \${APACHE_LOG_DIR}/digiparc-error.log
-    CustomLog \${APACHE_LOG_DIR}/digiparc-access.log combined
+    ErrorLog \${APACHE_LOG_DIR}/pakiparc-error.log
+    CustomLog \${APACHE_LOG_DIR}/pakiparc-access.log combined
 
     # PHP settings
     php_value upload_max_filesize 10M
@@ -356,7 +356,7 @@ EOF
 
     # Enable site
     a2dissite 000-default.conf 2>/dev/null || true
-    a2ensite digiparc.conf
+    a2ensite pakiparc.conf
 
     # Restart Apache
     systemctl restart apache2
@@ -374,7 +374,7 @@ setup_cron_jobs() {
     # Create crontab entries
     (crontab -l 2>/dev/null || true; cat <<EOF
 
-# DigiParc Fleet Management - Tâches automatiques
+# Pakiparc Fleet Management - Tâches automatiques
 # Vérification des alertes toutes les heures
 0 * * * * php $PROJECT_DIR/app/cron/check_alerts.php >> $PROJECT_DIR/var/log/cron-alerts.log 2>&1
 
@@ -403,8 +403,8 @@ EOF
 create_super_admin() {
     print_header "Création du compte Super Admin"
 
-    read -p "Email du Super Admin [admin@digiparc.com]: " ADMIN_EMAIL
-    ADMIN_EMAIL=${ADMIN_EMAIL:-admin@digiparc.com}
+    read -p "Email du Super Admin [admin@pakiparc.com]: " ADMIN_EMAIL
+    ADMIN_EMAIL=${ADMIN_EMAIL:-admin@pakiparc.com}
 
     read -sp "Mot de passe du Super Admin: " ADMIN_PASS
     echo ""
@@ -451,8 +451,8 @@ RewriteRule ^(.*)$ index.php [L,QSA]
 EOF
 
     # Set secure PHP configuration
-    cat >> /etc/php/8.1/apache2/conf.d/99-digiparc.ini <<EOF
-; DigiParc Security Configuration
+    cat >> /etc/php/8.1/apache2/conf.d/99-pakiparc.ini <<EOF
+; Pakiparc Security Configuration
 expose_php = Off
 display_errors = Off
 log_errors = On
@@ -500,7 +500,7 @@ final_checks() {
     fi
 
     # Check CRON jobs
-    if crontab -l | grep -q "digiparc"; then
+    if crontab -l | grep -q "pakiparc"; then
         print_success "Tâches CRON configurées"
     else
         print_warning "Tâches CRON non configurées"
@@ -528,7 +528,7 @@ main() {
 EOF
 
     echo ""
-    print_info "Ce script va installer DigiParc Fleet Management System"
+    print_info "Ce script va installer Pakiparc Fleet Management System"
     print_warning "L'installation prendra environ 5-10 minutes"
     echo ""
     read -p "Voulez-vous continuer? (o/N): " -n 1 -r
@@ -564,7 +564,7 @@ EOF
 EOF
 
     echo ""
-    print_success "DigiParc Fleet Management est maintenant installé!"
+    print_success "Pakiparc Fleet Management est maintenant installé!"
     echo ""
     print_info "Accédez à votre application:"
     echo -e "  ${GREEN}http://$(hostname -I | awk '{print $1}')${NC}"

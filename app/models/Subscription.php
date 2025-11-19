@@ -4,7 +4,7 @@
  * Subscription Model
  * Handles subscription and payment management
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

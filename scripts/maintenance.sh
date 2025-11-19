@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# DigiParc - Script de Maintenance
+# Pakiparc - Script de Maintenance
 # Effectue les tâches de maintenance régulières
 ###############################################################################
 
@@ -25,7 +25,7 @@ success() {
 
 cat <<'EOF'
 ╔══════════════════════════════════════════════════════════════╗
-║              DigiParc - Script de Maintenance                ║
+║              Pakiparc - Script de Maintenance                ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
 
@@ -39,7 +39,7 @@ success "Cache nettoyé"
 # 2. Nettoyage des logs anciens
 log "Nettoyage des logs anciens (>30 jours)..."
 find var/log -name "*.log" -mtime +30 -delete
-find /var/log/apache2 -name "digiparc-*.log.*" -mtime +30 -delete 2>/dev/null || true
+find /var/log/apache2 -name "pakiparc-*.log.*" -mtime +30 -delete 2>/dev/null || true
 success "Logs anciens supprimés"
 
 # 3. Nettoyage des fichiers temporaires

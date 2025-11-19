@@ -1,9 +1,9 @@
 /**
  * Service Worker for Progressive Web App (PWA)
- * DigiParc Fleet Management
+ * Pakiparc Fleet Management
  */
 
-const CACHE_NAME = 'digiparc-v1.0.0';
+const CACHE_NAME = 'pakiparc-v1.0.0';
 const urlsToCache = [
     '/',
     '/index.php',
@@ -130,7 +130,7 @@ self.addEventListener('push', event => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'DigiParc', options)
+        self.registration.showNotification(data.title || 'Pakiparc', options)
     );
 });
 

@@ -4,7 +4,7 @@
  * Analytics API Controller
  * Handles analytics and KPIs via API
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

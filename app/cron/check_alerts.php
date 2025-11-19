@@ -7,7 +7,7 @@
  * Usage: php /path/to/app/cron/check_alerts.php
  * Or add to crontab: 0 * * * * php /path/to/app/cron/check_alerts.php
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 
@@ -18,7 +18,7 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/Alert.php';
 require_once __DIR__ . '/../services/NotificationService.php';
 
-echo "=== DigiParc Alert Checker ===\n";
+echo "=== Pakiparc Alert Checker ===\n";
 echo "Started at: " . date('Y-m-d H:i:s') . "\n\n";
 
 try {

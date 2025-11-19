@@ -1,4 +1,4 @@
-# PLAN D'AMÉLIORATION COMPLET - DigiParc Fleet Management
+# PLAN D'AMÉLIORATION COMPLET - Pakiparc Fleet Management
 
 **Date:** 19 Novembre 2025
 **Version:** 1.0
@@ -9,7 +9,7 @@
 ## 📊 ANALYSE DE L'ÉCART
 
 ### État Actuel ✅
-L'application DigiParc dispose actuellement de :
+L'application Pakiparc dispose actuellement de :
 - Architecture multi-tenant complète
 - Gestion de base de flotte (véhicules, conducteurs)
 - Gestion financière basique
@@ -573,7 +573,7 @@ composer require stripe/stripe-php
 - Google Speech-to-Text (plus précis, payant)
 
 **Fonctionnalités:**
-- Activation vocale ("Hey DigiParc")
+- Activation vocale ("Hey Pakiparc")
 - Commandes prédéfinies
 - Mode dictée libre
 - Multi-langue
@@ -623,7 +623,7 @@ composer require stripe/stripe-php
 2. Sécurité routière
 3. Premiers secours
 4. Réglementation transport
-5. Utilisation DigiParc
+5. Utilisation Pakiparc
 
 **Fonctionnalités:**
 - Bibliothèque cours (vidéos, PDF, SCORM)
@@ -768,5 +768,5 @@ composer require stripe/stripe-php
 ---
 
 **Document créé:** 19 Novembre 2025
-**Auteur:** DigiParc Development Team
+**Auteur:** Pakiparc Development Team
 **Version:** 1.0

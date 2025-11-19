@@ -4,7 +4,7 @@
  * Dynamic Pricing Service
  * Calculates pricing based on usage and rules
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class PricingService

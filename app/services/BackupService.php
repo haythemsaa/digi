@@ -4,7 +4,7 @@
  * Backup Service
  * Handles automated database and file backups
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class BackupService
@@ -22,7 +22,7 @@ class BackupService
         $this->backupDir = __DIR__ . '/../../backups';
         $this->dbConfig = [
             'host' => defined('DB_HOST') ? DB_HOST : 'localhost',
-            'name' => defined('DB_NAME') ? DB_NAME : 'digiparc',
+            'name' => defined('DB_NAME') ? DB_NAME : 'pakiparc',
             'user' => defined('DB_USER') ? DB_USER : 'root',
             'pass' => defined('DB_PASS') ? DB_PASS : ''
         ];

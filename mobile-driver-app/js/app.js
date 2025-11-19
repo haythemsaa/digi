@@ -1,5 +1,5 @@
 /**
- * DigiParc Driver App - Main Application
+ * Pakiparc Driver App - Main Application
  */
 
 class DriverApp {
@@ -16,7 +16,7 @@ class DriverApp {
      * Initialize app
      */
     async init() {
-        console.log('Initializing DigiParc Driver App...');
+        console.log('Initializing Pakiparc Driver App...');
 
         // Hide loading screen
         setTimeout(() => {

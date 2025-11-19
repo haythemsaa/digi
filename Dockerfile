@@ -1,9 +1,9 @@
 FROM php:8.1-apache
 
 # Metadata
-LABEL maintainer="DigiParc Team <support@digiparc.com>"
+LABEL maintainer="Pakiparc Team <support@pakiparc.com>"
 LABEL version="3.0.0"
-LABEL description="DigiParc Fleet Management System - Enterprise Edition"
+LABEL description="Pakiparc Fleet Management System - Enterprise Edition"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -63,7 +63,7 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 public/uploads storage var/log
 
 # Configure Apache
-COPY config/apache/digiparc.conf /etc/apache2/sites-available/000-default.conf
+COPY config/apache/pakiparc.conf /etc/apache2/sites-available/000-default.conf
 
 # PHP Configuration
 RUN echo "upload_max_filesize = 10M" > /usr/local/etc/php/conf.d/uploads.ini \

@@ -22,7 +22,7 @@ class APITest extends TestCase
         $ch = curl_init($this->baseUrl . '/auth/login');
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'email' => 'test@digiparc.com',
+            'email' => 'test@pakiparc.com',
             'password' => 'test123'
         ]));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

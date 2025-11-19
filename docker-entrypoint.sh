@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 DigiParc Fleet Management v3.0.0"
+echo "🚀 Pakiparc Fleet Management v3.0.0"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Wait for database to be ready
@@ -43,7 +43,7 @@ define('DB_PASS', '$DB_PASS');
 define('JWT_SECRET', '$(openssl rand -base64 32)');
 define('APP_ENV', '$APP_ENV');
 define('DEBUG', false);
-define('APP_NAME', 'DigiParc Fleet Management');
+define('APP_NAME', 'Pakiparc Fleet Management');
 define('APP_VERSION', '3.0.0');
 define('APP_URL', 'http://localhost');
 EOF
@@ -71,10 +71,10 @@ if [ "$ADMIN_EXISTS" = "0" ]; then
     ADMIN_PASS_HASH=$(php -r "echo password_hash('admin123', PASSWORD_BCRYPT);")
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" <<EOF
 INSERT INTO users (email, password, first_name, last_name, role, status, created_at)
-VALUES ('admin@digiparc.com', '$ADMIN_PASS_HASH', 'Super', 'Admin', 'super_admin', 'active', NOW());
+VALUES ('admin@pakiparc.com', '$ADMIN_PASS_HASH', 'Super', 'Admin', 'super_admin', 'active', NOW());
 EOF
     echo "✓ Super admin created!"
-    echo "   Email: admin@digiparc.com"
+    echo "   Email: admin@pakiparc.com"
     echo "   Password: admin123"
     echo "   ⚠️  CHANGE THIS PASSWORD IMMEDIATELY!"
 else
@@ -93,7 +93,7 @@ echo "✓ Cache cleared!"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✓ DigiParc is ready!"
+echo "✓ Pakiparc is ready!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📍 Web: http://localhost"
 echo "📍 API: http://localhost/api/v1"

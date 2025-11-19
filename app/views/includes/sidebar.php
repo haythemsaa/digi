@@ -2,7 +2,7 @@
     <div class="d-flex flex-column h-100">
         <!-- Logo -->
         <div class="p-4 text-center border-bottom border-white border-opacity-25">
-            <h3 class="text-white mb-0"><i class="fas fa-truck-moving me-2"></i>DigiParc</h3>
+            <h3 class="text-white mb-0"><i class="fas fa-truck-moving me-2"></i>Pakiparc</h3>
             <small class="text-white-50">Fleet Management</small>
         </div>
 

@@ -4,7 +4,7 @@
  * Alert Model
  * Handles intelligent alert system and notifications
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class Alert

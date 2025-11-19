@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to DigiParc Fleet Management System will be documented in this file.
+All notable changes to Pakiparc Fleet Management System will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **MILESTONE ACHIEVED:** 22/22 models = 100% multi-tenant coverage (19 business + 3 infrastructure)
 
-This is a complete and exhaustive transformation of DigiParc into a multi-tenant SaaS platform with comprehensive company management, subscription handling, and complete data isolation across ALL business logic and infrastructure.
+This is a complete and exhaustive transformation of Pakiparc into a multi-tenant SaaS platform with comprehensive company management, subscription handling, and complete data isolation across ALL business logic and infrastructure.
 
 #### Latest Migration (Session 3 - Final Audit)
 - ✅ **Drivers.php** (349 lines) - Driver profiles, HR data, infractions, license tracking
@@ -375,7 +375,7 @@ This is a complete and exhaustive transformation of DigiParc into a multi-tenant
 
 1. **Backup everything**
    ```bash
-   mysqldump -u root -p digiparc > backup_v1.sql
+   mysqldump -u root -p pakiparc > backup_v1.sql
    tar -czf backup_files_v1.tar.gz public/uploads
    ```
 
@@ -394,17 +394,17 @@ This is a complete and exhaustive transformation of DigiParc into a multi-tenant
 
 2. **Run migrations**
    ```bash
-   mysql -u root -p digiparc < database/migration_multi_tenant.sql
+   mysql -u root -p pakiparc < database/migration_multi_tenant.sql
    ```
 
 3. **Create companies table**
    ```bash
-   mysql -u root -p digiparc < database/schema.sql
+   mysql -u root -p pakiparc < database/schema.sql
    ```
 
 4. **Create super admin**
    ```bash
-   mysql -u root -p digiparc < database/seeds/super_admin.sql
+   mysql -u root -p pakiparc < database/seeds/super_admin.sql
    ```
 
 5. **Create first company**
@@ -454,8 +454,8 @@ This is a complete and exhaustive transformation of DigiParc into a multi-tenant
 ## Support & Feedback
 
 For questions, issues, or suggestions:
-- **Issues:** [GitHub Issues](https://github.com/your-org/digiparc/issues)
-- **Email:** support@digiparc.com
+- **Issues:** [GitHub Issues](https://github.com/your-org/pakiparc/issues)
+- **Email:** support@pakiparc.com
 - **Documentation:** [docs/](docs/)
 
 ---

@@ -10,7 +10,7 @@
         <div class="d-flex align-items-center">
             <i class="fas fa-mobile-alt fa-2x me-3"></i>
             <div class="flex-grow-1">
-                <strong>Install DigiParc App</strong>
+                <strong>Install Pakiparc App</strong>
                 <p class="mb-0 small">Install our app for a better experience!</p>
             </div>
             <button id="pwaInstallBtn" class="btn btn-primary btn-sm me-2">Install</button>

@@ -2,7 +2,7 @@
 
 /**
  * English translations
- * @author DigiParc Team
+ * @author Pakiparc Team
  */
 
 return [

@@ -1,6 +1,6 @@
-# DigiParc Tests
+# Pakiparc Tests
 
-This directory contains unit and integration tests for the DigiParc Fleet Management System.
+This directory contains unit and integration tests for the Pakiparc Fleet Management System.
 
 ## Running Tests
 
@@ -13,8 +13,8 @@ composer require --dev phpunit/phpunit
 
 2. Create test database:
 ```bash
-mysql -u root -p -e "CREATE DATABASE digiparc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p digiparc_test < database/schema.sql
+mysql -u root -p -e "CREATE DATABASE pakiparc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p pakiparc_test < database/schema.sql
 ```
 
 ### Run All Tests
@@ -147,7 +147,7 @@ jobs:
 
 ## Notes
 
-- Tests run against a separate `digiparc_test` database
+- Tests run against a separate `pakiparc_test` database
 - Test data is automatically cleaned up after each test
 - Helper functions available in `bootstrap.php`
 - Use `createTestCompany()` to create test companies

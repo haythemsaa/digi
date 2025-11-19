@@ -1,10 +1,10 @@
 <?php
 
 /**
- * DigiParc REST API v1
+ * Pakiparc REST API v1
  * Main entry point for API requests
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

@@ -4,7 +4,7 @@
  * Push Notification Service
  * Handles web push notifications
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class PushService

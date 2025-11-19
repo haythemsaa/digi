@@ -103,7 +103,7 @@
         <div class="login-card">
             <div class="login-header">
                 <i class="fas fa-truck-moving"></i>
-                <h2 class="mb-0">DigiParc</h2>
+                <h2 class="mb-0">Pakiparc</h2>
                 <p class="mb-0">Fleet Management System</p>
             </div>
 
@@ -173,7 +173,7 @@
                 <hr class="my-4">
 
                 <div class="text-center text-muted small">
-                    <p class="mb-0">Default login: admin@digiparc.local / admin123</p>
+                    <p class="mb-0">Default login: admin@pakiparc.local / admin123</p>
                 </div>
             </div>
         </div>

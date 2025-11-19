@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: digiparc_web
+    container_name: pakiparc_web
     restart: unless-stopped
     ports:
       - "80:80"
@@ -18,24 +18,24 @@ services:
     environment:
       - APP_ENV=production
       - DB_HOST=db
-      - DB_NAME=digiparc
-      - DB_USER=digiparc_user
-      - DB_PASS=digiparc_password
+      - DB_NAME=pakiparc
+      - DB_USER=pakiparc_user
+      - DB_PASS=pakiparc_password
     depends_on:
       - db
       - redis
     networks:
-      - digiparc_network
+      - pakiparc_network
 
   # Database (MySQL)
   db:
     image: mysql:8.0
-    container_name: digiparc_db
+    container_name: pakiparc_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: digiparc
-      MYSQL_USER: digiparc_user
-      MYSQL_PASSWORD: digiparc_password
+      MYSQL_DATABASE: pakiparc
+      MYSQL_USER: pakiparc_user
+      MYSQL_PASSWORD: pakiparc_password
       MYSQL_ROOT_PASSWORD: root_password
     ports:
       - "3306:3306"
@@ -44,40 +44,40 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./database/migrations:/docker-entrypoint-initdb.d/migrations
     networks:
-      - digiparc_network
+      - pakiparc_network
 
   # Redis (Cache & Sessions)
   redis:
     image: redis:7-alpine
-    container_name: digiparc_redis
+    container_name: pakiparc_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - digiparc_network
+      - pakiparc_network
 
   # phpMyAdmin (Database Management)
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: digiparc_phpmyadmin
+    container_name: pakiparc_phpmyadmin
     restart: unless-stopped
     ports:
       - "8080:80"
     environment:
       PMA_HOST: db
-      PMA_USER: digiparc_user
-      PMA_PASSWORD: digiparc_password
+      PMA_USER: pakiparc_user
+      PMA_PASSWORD: pakiparc_password
     depends_on:
       - db
     networks:
-      - digiparc_network
+      - pakiparc_network
 
   # Backup Service (Automated Backups)
   backup:
     image: alpine:latest
-    container_name: digiparc_backup
+    container_name: pakiparc_backup
     restart: unless-stopped
     volumes:
       - ./storage/backups:/backups
@@ -86,7 +86,7 @@ services:
       sh -c "
         apk add --no-cache mysql-client &&
         while true; do
-          mysqldump -h db -u digiparc_user -pdigiparc_password digiparc | gzip > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz &&
+          mysqldump -h db -u pakiparc_user -ppakiparc_password pakiparc | gzip > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz &&
           find /backups -name 'backup_*.sql.gz' -mtime +7 -delete &&
           sleep 86400;
         done
@@ -94,7 +94,7 @@ services:
     depends_on:
       - db
     networks:
-      - digiparc_network
+      - pakiparc_network
 
 volumes:
   db_data:
@@ -103,5 +103,5 @@ volumes:
     driver: local
 
 networks:
-  digiparc_network:
+  pakiparc_network:
     driver: bridge

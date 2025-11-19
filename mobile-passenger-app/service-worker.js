@@ -1,5 +1,5 @@
-// Service Worker for DigiParc Passenger App
-const CACHE_NAME = 'digiparc-passenger-v1';
+// Service Worker for Pakiparc Passenger App
+const CACHE_NAME = 'pakiparc-passenger-v1';
 const urlsToCache = [
     '/mobile-passenger-app/',
     '/mobile-passenger-app/index.html',
@@ -235,7 +235,7 @@ self.addEventListener('push', (event) => {
     console.log('[Service Worker] Push received');
 
     let data = {
-        title: 'DigiParc Transport',
+        title: 'Pakiparc Transport',
         body: 'Vous avez une nouvelle notification',
         icon: '/mobile-passenger-app/icons/icon-192x192.png',
         badge: '/mobile-passenger-app/icons/badge-72x72.png'

@@ -4,7 +4,7 @@
  * Payments Controller
  * Handles payment and subscription management
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

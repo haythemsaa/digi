@@ -1,4 +1,4 @@
-// Service Worker for DigiParc Smart Delivery PWA
+// Service Worker for Pakiparc Smart Delivery PWA
 const CACHE_NAME = 'delivery-ai-v1';
 const urlsToCache = [
     '/mobile-delivery-app/',

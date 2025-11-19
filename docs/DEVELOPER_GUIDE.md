@@ -1,4 +1,4 @@
-# DigiParc Multi-Tenant Developer Guide
+# Pakiparc Multi-Tenant Developer Guide
 
 ## Quick Reference
 
@@ -542,5 +542,5 @@ UPDATE existing_table SET company_id = 1 WHERE company_id = 0;
 
 For questions or issues:
 - Create an issue in the project repository
-- Contact: dev@digiparc.com
-- Documentation: https://docs.digiparc.com
+- Contact: dev@pakiparc.com
+- Documentation: https://docs.pakiparc.com

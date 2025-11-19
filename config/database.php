@@ -4,7 +4,7 @@
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'digiparc_fleet');
+define('DB_NAME', 'pakiparc_fleet');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');

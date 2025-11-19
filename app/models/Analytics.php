@@ -4,7 +4,7 @@
  * Analytics Model
  * Handles advanced analytics and KPI calculations for the dashboard
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class Analytics

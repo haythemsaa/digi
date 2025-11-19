@@ -1,6 +1,6 @@
 {
-    "name": "digiparc/fleet-management",
-    "description": "Professional Fleet Management System - DigiParc Clone",
+    "name": "pakiparc/fleet-management",
+    "description": "Professional Fleet Management System - Pakiparc Clone",
     "type": "project",
     "require": {
         "php": ">=7.4"

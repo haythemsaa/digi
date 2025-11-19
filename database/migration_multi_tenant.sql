@@ -218,10 +218,10 @@ INSERT INTO `companies` (
   `max_vehicles`,
   `max_drivers`
 ) VALUES (
-  'DigiParc Demo',
+  'Pakiparc Demo',
   'DEMO001',
-  'DigiParc Demo Company SARL',
-  'demo@digiparc.tn',
+  'Pakiparc Demo Company SARL',
+  'demo@pakiparc.tn',
   '+216 71 123 456',
   'Avenue Habib Bourguiba',
   'Tunis',

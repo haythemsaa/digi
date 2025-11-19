@@ -4,7 +4,7 @@
  * API Rate Limiting Middleware
  * Limits requests per IP/user
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class RateLimitMiddleware

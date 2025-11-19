@@ -1,6 +1,6 @@
-# DigiParc Driver - Application Mobile Chauffeur
+# Pakiparc Driver - Application Mobile Chauffeur
 
-Application mobile Progressive Web App (PWA) pour les chauffeurs du système DigiParc Fleet Management.
+Application mobile Progressive Web App (PWA) pour les chauffeurs du système Pakiparc Fleet Management.
 
 ## 🚀 Fonctionnalités
 
@@ -71,7 +71,7 @@ Application mobile Progressive Web App (PWA) pour les chauffeurs du système Dig
 ### Prérequis
 - Serveur web (Apache/Nginx)
 - HTTPS (requis pour les Service Workers)
-- Backend DigiParc API configuré
+- Backend Pakiparc API configuré
 
 ### Étapes d'Installation
 
@@ -117,7 +117,7 @@ Application mobile Progressive Web App (PWA) pour les chauffeurs du système Dig
 #### `js/config.js`
 ```javascript
 const CONFIG = {
-    API_BASE_URL: 'https://api.digiparc.com',
+    API_BASE_URL: 'https://api.pakiparc.com',
     LOCATION_UPDATE_INTERVAL: 30000, // 30 secondes
     SYNC_INTERVAL: 60000, // 1 minute
     // ...
@@ -266,13 +266,13 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 ## 📞 Support
 
 Pour toute question ou problème:
-- **Email**: support@digiparc.com
-- **Documentation**: https://docs.digiparc.com
-- **Issues**: https://github.com/digiparc/driver-app/issues
+- **Email**: support@pakiparc.com
+- **Documentation**: https://docs.pakiparc.com
+- **Issues**: https://github.com/pakiparc/driver-app/issues
 
 ## 📄 Licence
 
-© 2024 DigiParc Fleet Management. Tous droits réservés.
+© 2024 Pakiparc Fleet Management. Tous droits réservés.
 
 ## 🎯 Roadmap Future
 
@@ -330,4 +330,4 @@ python -m http.server 8000
 
 ---
 
-**Made with ❤️ for DigiParc Drivers**
+**Made with ❤️ for Pakiparc Drivers**

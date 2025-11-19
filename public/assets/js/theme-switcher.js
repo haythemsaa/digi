@@ -2,14 +2,14 @@
  * Theme Switcher
  * Handles dark/light mode toggle with localStorage persistence
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 
 (function() {
     'use strict';
 
-    const STORAGE_KEY = 'digiparc-theme';
+    const STORAGE_KEY = 'pakiparc-theme';
     const THEME_DARK = 'dark';
     const THEME_LIGHT = 'light';
 
@@ -184,7 +184,7 @@
     }
 
     // Expose API
-    window.DigiParcTheme = {
+    window.PakiparcTheme = {
         toggle: () => window.themeSwitcher.toggleTheme(),
         setTheme: (theme) => window.themeSwitcher.applyTheme(theme),
         getTheme: () => window.themeSwitcher.getCurrentTheme(),
@@ -197,17 +197,17 @@
  * Usage examples:
  *
  * // Toggle theme programmatically
- * DigiParcTheme.toggle();
+ * PakiparcTheme.toggle();
  *
  * // Set specific theme
- * DigiParcTheme.setTheme('dark');
- * DigiParcTheme.setTheme('light');
+ * PakiparcTheme.setTheme('dark');
+ * PakiparcTheme.setTheme('light');
  *
  * // Get current theme
- * const currentTheme = DigiParcTheme.getTheme();
+ * const currentTheme = PakiparcTheme.getTheme();
  *
  * // Check if dark mode
- * if (DigiParcTheme.isDark()) {
+ * if (PakiparcTheme.isDark()) {
  *     console.log('Dark mode is active');
  * }
  *

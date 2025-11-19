@@ -1,11 +1,11 @@
 /**
- * DigiParc Fleet Management - Custom JavaScript
+ * Pakiparc Fleet Management - Custom JavaScript
  * Main application JavaScript
  */
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DigiParc Fleet Management initialized');
+    console.log('Pakiparc Fleet Management initialized');
 
     // Initialize tooltips if Bootstrap is available
     if (typeof bootstrap !== 'undefined') {
@@ -319,6 +319,6 @@ window.addEventListener('error', function(e) {
 });
 
 // Console welcome message
-console.log('%cDigiParc Fleet Management', 'color: #667eea; font-size: 24px; font-weight: bold;');
+console.log('%cPakiparc Fleet Management', 'color: #667eea; font-size: 24px; font-weight: bold;');
 console.log('%cVersion 1.0.0', 'color: #764ba2; font-size: 14px;');
 console.log('%c⚠️ Warning: This is a browser feature intended for developers. Do not paste code here that you don\'t understand!', 'color: #dc3545; font-size: 12px; font-weight: bold;');

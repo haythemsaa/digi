@@ -1,8 +1,8 @@
-# Guide Multi-Tenant DigiParc
+# Guide Multi-Tenant Pakiparc
 
 ## Vue d'ensemble
 
-DigiParc est maintenant une plateforme SaaS multi-tenant complète. Chaque entreprise (company) dispose de son propre espace isolé avec ses propres données (véhicules, conducteurs, missions, transactions, etc.).
+Pakiparc est maintenant une plateforme SaaS multi-tenant complète. Chaque entreprise (company) dispose de son propre espace isolé avec ses propres données (véhicules, conducteurs, missions, transactions, etc.).
 
 ## Architecture
 
@@ -183,7 +183,7 @@ $_SESSION['is_super_admin'] = true;
 Pour appliquer le multi-tenancy sur une base existante:
 
 ```bash
-mysql -u root -p digiparc < database/migration_multi_tenant.sql
+mysql -u root -p pakiparc < database/migration_multi_tenant.sql
 ```
 
 Cette migration:
@@ -466,7 +466,7 @@ CREATE INDEX idx_company ON table_name(company_id);
 
 ## Conclusion
 
-Le système multi-tenant de DigiParc offre:
+Le système multi-tenant de Pakiparc offre:
 - ✅ Isolation complète des données
 - ✅ Support super admin
 - ✅ Gestion des quotas

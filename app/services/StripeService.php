@@ -4,7 +4,7 @@
  * Stripe Payment Service
  * Handles Stripe payment integration
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class StripeService

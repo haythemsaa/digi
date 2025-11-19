@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# DigiParc Disaster Recovery Script
+# Pakiparc Disaster Recovery Script
 # Restores database and files from backup
 #
 # Usage: ./scripts/restore.sh [backup_date]
@@ -15,7 +15,7 @@ set -e
 # Configuration
 BACKUP_DIR="$(dirname "$0")/../backups"
 DB_HOST="${DB_HOST:-localhost}"
-DB_NAME="${DB_NAME:-digiparc}"
+DB_NAME="${DB_NAME:-pakiparc}"
 DB_USER="${DB_USER:-root}"
 DB_PASS="${DB_PASS:-}"
 UPLOADS_DIR="$(dirname "$0")/../public/uploads"
@@ -26,7 +26,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== DigiParc Disaster Recovery ===${NC}"
+echo -e "${GREEN}=== Pakiparc Disaster Recovery ===${NC}"
 echo "Started at: $(date)"
 echo ""
 

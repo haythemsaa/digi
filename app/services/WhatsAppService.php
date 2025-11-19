@@ -4,7 +4,7 @@
  * WhatsApp Service
  * Handles WhatsApp messages via Twilio WhatsApp Business API
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class WhatsAppService

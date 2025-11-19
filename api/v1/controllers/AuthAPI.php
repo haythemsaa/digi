@@ -4,7 +4,7 @@
  * Authentication API Controller
  * Handles user authentication via API
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

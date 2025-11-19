@@ -4,7 +4,7 @@
  * Notification Service
  * Handles multi-channel notifications (Email, SMS, Push, WhatsApp)
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class NotificationService
@@ -375,7 +375,7 @@ class NotificationService
 <body>
     <div class="container">
         <div class="header">
-            <h1>DigiParc - Alerte</h1>
+            <h1>Pakiparc - Alerte</h1>
         </div>
         <div class="content">
             <div class="alert-box alert-' . ($data['priority'] ?? 'medium') . '">
@@ -392,9 +392,9 @@ class NotificationService
         $html .= '
         </div>
         <div class="footer">
-            <p>Vous recevez cet email car vous êtes abonné aux alertes DigiParc.<br>
+            <p>Vous recevez cet email car vous êtes abonné aux alertes Pakiparc.<br>
             <a href="' . APP_URL . '/settings/notifications">Gérer mes préférences</a></p>
-            <p>&copy; ' . date('Y') . ' ' . htmlspecialchars($company['name'] ?? 'DigiParc') . '</p>
+            <p>&copy; ' . date('Y') . ' ' . htmlspecialchars($company['name'] ?? 'Pakiparc') . '</p>
         </div>
     </div>
 </body>
@@ -435,7 +435,7 @@ class NotificationService
     {
         $icon = $this->getPriorityIcon($data['priority'] ?? 'medium');
 
-        $message = "*{$icon} DigiParc Alert*\n\n";
+        $message = "*{$icon} Pakiparc Alert*\n\n";
         $message .= "*" . $data['title'] . "*\n\n";
         $message .= $data['message'];
 

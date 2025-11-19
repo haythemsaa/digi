@@ -1,4 +1,4 @@
--- DigiParc - Demo/Test Data
+-- Pakiparc - Demo/Test Data
 -- Seeds the database with sample companies and data for testing
 -- Use this for development and demo environments only!
 

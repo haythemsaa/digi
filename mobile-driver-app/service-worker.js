@@ -1,9 +1,9 @@
 /**
- * DigiParc Driver App - Service Worker
+ * Pakiparc Driver App - Service Worker
  * Provides offline functionality and background sync
  */
 
-const CACHE_NAME = 'digiparc-driver-v1.0.0';
+const CACHE_NAME = 'pakiparc-driver-v1.0.0';
 const urlsToCache = [
     '/mobile-driver-app/',
     '/mobile-driver-app/index.html',
@@ -185,7 +185,7 @@ self.addEventListener('push', event => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'DigiParc Driver', options)
+        self.registration.showNotification(data.title || 'Pakiparc Driver', options)
     );
 });
 

@@ -1,4 +1,4 @@
-# DigiParc Multi-Tenant Deployment Checklist
+# Pakiparc Multi-Tenant Deployment Checklist
 
 ## Pre-Deployment
 
@@ -65,15 +65,15 @@ sudo a2enmod rewrite
 sudo a2enmod headers
 
 # Set proper permissions
-sudo chown -R www-data:www-data /var/www/html/digiparc
-sudo chmod -R 755 /var/www/html/digiparc
-sudo chmod -R 775 /var/www/html/digiparc/public/uploads
+sudo chown -R www-data:www-data /var/www/html/pakiparc
+sudo chmod -R 755 /var/www/html/pakiparc
+sudo chmod -R 775 /var/www/html/pakiparc/public/uploads
 ```
 
 ### 2. Application Setup
 ```bash
 # Navigate to application directory
-cd /var/www/html/digiparc
+cd /var/www/html/pakiparc
 
 # Install dependencies
 composer install --no-dev --optimize-autoloader
@@ -88,7 +88,7 @@ composer install --no-dev --optimize-autoloader
 ### 3. Database Migration
 ```bash
 # Import database schema
-mysql -u root -p digiparc < database/schema.sql
+mysql -u root -p pakiparc < database/schema.sql
 
 # Run migrations
 php cli/migrate.php
@@ -109,7 +109,7 @@ INSERT INTO users (
 ) VALUES (
     'Super',
     'Admin',
-    'admin@digiparc.com',
+    'admin@pakiparc.com',
     '$2y$10$...',  -- Use password_hash('your_password', PASSWORD_DEFAULT)
     'admin',
     'active',
@@ -179,7 +179,7 @@ INSERT INTO users (
 ### 1. Server Level
 ```bash
 # Disable directory listing
-sudo nano /etc/apache2/sites-available/digiparc.conf
+sudo nano /etc/apache2/sites-available/pakiparc.conf
 # Add: Options -Indexes
 
 # Hide Apache version
@@ -216,8 +216,8 @@ sudo ufw enable
 **Solution:**
 ```bash
 # Check permissions
-sudo chmod 775 /var/www/html/digiparc/public/uploads
-sudo chown -R www-data:www-data /var/www/html/digiparc/public/uploads
+sudo chmod 775 /var/www/html/pakiparc/public/uploads
+sudo chown -R www-data:www-data /var/www/html/pakiparc/public/uploads
 
 # Check PHP upload settings
 php -i | grep upload_max_filesize
@@ -264,9 +264,9 @@ php -i | grep post_max_size
 
 ## Support Contacts
 
-- **Technical Support:** support@digiparc.com
+- **Technical Support:** support@pakiparc.com
 - **Emergency Contact:** +216 XX XXX XXX
-- **Documentation:** https://docs.digiparc.com
+- **Documentation:** https://docs.pakiparc.com
 
 ## Version
 

@@ -4,7 +4,7 @@
  * GDPR Service
  * Handles GDPR/RGPD compliance features
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class GDPRService

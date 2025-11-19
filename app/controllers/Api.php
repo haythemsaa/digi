@@ -434,7 +434,7 @@ class Api extends Controller {
      */
     public function index() {
         $this->jsonResponse([
-            'name' => 'DigiParc Fleet Management API',
+            'name' => 'Pakiparc Fleet Management API',
             'version' => '1.0.0',
             'endpoints' => [
                 'POST /api/login' => 'Login and get API token',

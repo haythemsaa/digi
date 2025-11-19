@@ -4,7 +4,7 @@
  * Notifications Controller
  * Handles notification preferences and history
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

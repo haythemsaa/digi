@@ -4,7 +4,7 @@
  */
 
 // Application Settings
-define('APP_NAME', 'DigiParc Fleet Management');
+define('APP_NAME', 'Pakiparc Fleet Management');
 define('APP_VERSION', '1.0.0');
 define('APP_URL', 'http://localhost');
 define('APP_ENV', 'development'); // development, production
@@ -37,8 +37,8 @@ define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
 define('SMTP_USER', '');
 define('SMTP_PASS', '');
-define('SMTP_FROM', 'noreply@digiparc.local');
-define('SMTP_FROM_NAME', 'DigiParc System');
+define('SMTP_FROM', 'noreply@pakiparc.local');
+define('SMTP_FROM_NAME', 'Pakiparc System');
 
 // SMS Configuration (for alerts)
 define('SMS_API_KEY', '');

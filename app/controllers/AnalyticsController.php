@@ -4,7 +4,7 @@
  * Analytics Controller
  * Handles advanced analytics and reporting features
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class AnalyticsController
@@ -176,7 +176,7 @@ class AnalyticsController
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set headers
-        $sheet->setCellValue('A1', 'DigiParc - Tableau de Bord Analytique');
+        $sheet->setCellValue('A1', 'Pakiparc - Tableau de Bord Analytique');
         $sheet->setCellValue('A2', 'Entreprise: ' . $company['name']);
         $sheet->setCellValue('A3', 'Période: ' . ucfirst($period));
         $sheet->setCellValue('A4', 'Date: ' . date('d/m/Y H:i'));

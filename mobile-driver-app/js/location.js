@@ -1,5 +1,5 @@
 /**
- * DigiParc Driver App - Geolocation Manager
+ * Pakiparc Driver App - Geolocation Manager
  */
 
 class LocationManager {

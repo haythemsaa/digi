@@ -331,7 +331,7 @@ function logCompanyActivity($action, $description, $metadata = []) {
  * @return string Company name
  */
 function getCompanyName() {
-    return getCompanySetting('company_name', 'DigiParc');
+    return getCompanySetting('company_name', 'Pakiparc');
 }
 
 /**

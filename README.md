@@ -1,4 +1,4 @@
-# DigiParc - Fleet Management System
+# Pakiparc - Fleet Management System
 
 **Version 3.0.0 (Enterprise Edition)** | Production Ready 🚀
 
@@ -191,17 +191,17 @@ A comprehensive multi-tenant SaaS platform for fleet management, vehicle trackin
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-org/digiparc.git
-cd digiparc
+git clone https://github.com/your-org/pakiparc.git
+cd pakiparc
 
 # 2. Install dependencies
 composer install
 
 # 3. Create database
-mysql -u root -p -e "CREATE DATABASE digiparc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p -e "CREATE DATABASE pakiparc CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 4. Import schema
-mysql -u root -p digiparc < database/schema.sql
+mysql -u root -p pakiparc < database/schema.sql
 
 # 5. Configure
 cp config/config.example.php config/config.php
@@ -212,13 +212,13 @@ chmod -R 755 .
 chmod -R 775 public/uploads
 
 # 7. Create super admin
-mysql -u root -p digiparc < database/seeds/super_admin.sql
+mysql -u root -p pakiparc < database/seeds/super_admin.sql
 ```
 
 ### Default Credentials
 
 **Super Admin:**
-- Email: `admin@digiparc.com`
+- Email: `admin@pakiparc.com`
 - Password: `password` (change immediately!)
 
 ---
@@ -230,13 +230,13 @@ mysql -u root -p digiparc < database/seeds/super_admin.sql
 ```php
 <?php
 // Application
-define('APP_NAME', 'DigiParc');
+define('APP_NAME', 'Pakiparc');
 define('APP_VERSION', '2.0.0');
-define('APP_URL', 'http://localhost/digiparc');
+define('APP_URL', 'http://localhost/pakiparc');
 
 // Database
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'digiparc');
+define('DB_NAME', 'pakiparc');
 define('DB_USER', 'root');
 define('DB_PASS', 'your_password');
 
@@ -249,17 +249,17 @@ define('DEBUG', false); // Set to false in production
 
 ```apache
 <VirtualHost *:80>
-    ServerName digiparc.local
-    DocumentRoot /var/www/html/digiparc
+    ServerName pakiparc.local
+    DocumentRoot /var/www/html/pakiparc
 
-    <Directory /var/www/html/digiparc>
+    <Directory /var/www/html/pakiparc>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/digiparc-error.log
-    CustomLog ${APACHE_LOG_DIR}/digiparc-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/pakiparc-error.log
+    CustomLog ${APACHE_LOG_DIR}/pakiparc-access.log combined
 </VirtualHost>
 ```
 
@@ -269,7 +269,7 @@ define('DEBUG', false); // Set to false in production
 
 ### 1. Login as Super Admin
 
-Visit `http://localhost/digiparc` and login with super admin credentials.
+Visit `http://localhost/pakiparc` and login with super admin credentials.
 
 ### 2. Create Your First Company
 
@@ -419,7 +419,7 @@ Comprehensive documentation is available in the `docs/` directory:
 ## 🗂️ Project Structure
 
 ```
-digiparc/
+pakiparc/
 ├── app/
 │   ├── controllers/          # Application controllers
 │   │   ├── Companies.php     # Company management (super admin)
@@ -603,9 +603,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👥 Support
 
 - **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/your-org/digiparc/issues)
-- **Email:** support@digiparc.com
-- **Website:** https://digiparc.com
+- **Issues:** [GitHub Issues](https://github.com/your-org/pakiparc/issues)
+- **Email:** support@pakiparc.com
+- **Website:** https://pakiparc.com
 
 ---
 
@@ -633,6 +633,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by the DigiParc Team**
+**Made with ❤️ by the Pakiparc Team**
 
 *Version 2.0.0 | Multi-Tenant SaaS Platform | November 2025*

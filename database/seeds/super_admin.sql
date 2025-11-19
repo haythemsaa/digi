@@ -1,4 +1,4 @@
--- DigiParc - Super Admin Seed Data
+-- Pakiparc - Super Admin Seed Data
 -- Creates a default super admin account for initial setup
 -- WARNING: Change the password immediately after first login!
 
@@ -16,7 +16,7 @@ INSERT INTO users (
 ) VALUES (
     'Super',
     'Admin',
-    'admin@digiparc.com',
+    'admin@pakiparc.com',
     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', -- password: password
     'admin',
     'active',
@@ -29,5 +29,5 @@ INSERT INTO users (
 
 -- Confirmation message
 SELECT 'Super admin account created successfully!' AS message;
-SELECT CONCAT('Email: admin@digiparc.com') AS credentials;
+SELECT CONCAT('Email: admin@pakiparc.com') AS credentials;
 SELECT CONCAT('Password: password (CHANGE IMMEDIATELY!)') AS warning;

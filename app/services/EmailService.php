@@ -4,7 +4,7 @@
  * Email Service
  * Handles email notifications via PHPMailer
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class EmailService
@@ -44,7 +44,7 @@ class EmailService
             // For now, use PHP's mail() function
             $headers = "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: DigiParc <noreply@digiparc.com>\r\n";
+            $headers .= "From: Pakiparc <noreply@pakiparc.com>\r\n";
 
             return mail($data['to'], $data['subject'], $data['body'], $headers);
 

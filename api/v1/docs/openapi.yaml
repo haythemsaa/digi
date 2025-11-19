@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: DigiParc Fleet Management API
+  title: Pakiparc Fleet Management API
   version: 1.0.0
   description: |
-    RESTful API for DigiParc fleet management system.
+    RESTful API for Pakiparc fleet management system.
 
     ## Authentication
     All endpoints (except /auth/*) require a Bearer token in the Authorization header:
@@ -35,18 +35,18 @@ info:
     ```
 
   contact:
-    name: DigiParc Support
-    email: support@digiparc.com
-    url: https://digiparc.com
+    name: Pakiparc Support
+    email: support@pakiparc.com
+    url: https://pakiparc.com
 
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.digiparc.com/v1
+  - url: https://api.pakiparc.com/v1
     description: Production server
-  - url: https://staging-api.digiparc.com/v1
+  - url: https://staging-api.pakiparc.com/v1
     description: Staging server
   - url: http://localhost/api/v1
     description: Development server
@@ -90,7 +90,7 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: admin@digiparc.com
+                  example: admin@pakiparc.com
                 password:
                   type: string
                   format: password

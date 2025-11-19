@@ -4,7 +4,7 @@
  * API Authentication Middleware
  * Validates JWT tokens for API requests
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class AuthMiddleware

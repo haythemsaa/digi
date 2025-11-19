@@ -1,4 +1,4 @@
-# RÉSUMÉ DES AMÉLIORATIONS - DigiParc Fleet Management
+# RÉSUMÉ DES AMÉLIORATIONS - Pakiparc Fleet Management
 
 **Date:** 19 Novembre 2025
 **Branche:** `claude/review-requirements-improvements-01SfrYPtyo7eFMhHVmrNLVdM`
@@ -8,7 +8,7 @@
 
 ## 📊 VUE D'ENSEMBLE
 
-Suite à l'analyse complète du **CAHIER_DES_CHARGES_COMPLET.md**, j'ai identifié et implémenté les fonctionnalités critiques manquantes pour rendre votre application DigiParc commercialement viable et compétitive.
+Suite à l'analyse complète du **CAHIER_DES_CHARGES_COMPLET.md**, j'ai identifié et implémenté les fonctionnalités critiques manquantes pour rendre votre application Pakiparc commercialement viable et compétitive.
 
 ### Statistiques
 
@@ -324,8 +324,8 @@ define('SMTP_HOST', 'smtp.example.com');
 define('SMTP_PORT', 587);
 define('SMTP_USER', 'your_email@example.com');
 define('SMTP_PASS', 'your_password');
-define('SMTP_FROM', 'noreply@digiparc.com');
-define('SMTP_FROM_NAME', 'DigiParc');
+define('SMTP_FROM', 'noreply@pakiparc.com');
+define('SMTP_FROM_NAME', 'Pakiparc');
 ```
 
 ### 5. Base de Données
@@ -342,7 +342,7 @@ Ou via PhpMyAdmin: importer le fichier SQL.
 Ajouter au crontab:
 ```bash
 # Alert checker (every hour)
-0 * * * * php /path/to/app/cron/check_alerts.php >> /var/log/digiparc/alerts.log 2>&1
+0 * * * * php /path/to/app/cron/check_alerts.php >> /var/log/pakiparc/alerts.log 2>&1
 ```
 
 ---
@@ -366,7 +366,7 @@ nano config/config.php
 
 ### Étape 3: Base de Données
 ```bash
-mysql -u root -p digiparc < database/migrations/create_alerts_table.sql
+mysql -u root -p pakiparc < database/migrations/create_alerts_table.sql
 ```
 
 ### Étape 4: Permissions
@@ -389,7 +389,7 @@ crontab -e
 php app/cron/check_alerts.php
 
 # Vérifier les logs
-tail -f /var/log/digiparc/alerts.log
+tail -f /var/log/pakiparc/alerts.log
 ```
 
 ---
@@ -539,12 +539,12 @@ tail -f /var/log/digiparc/alerts.log
 
 **Besoin d'aide pour le déploiement?**
 - Suivre le guide dans ce document
-- Vérifier les logs: `/var/log/digiparc/`
+- Vérifier les logs: `/var/log/pakiparc/`
 - Tester CRON manuellement avant automatisation
 
 ---
 
-**🎉 Félicitations ! Votre application DigiParc est maintenant prête à conquérir le marché de la gestion de flotte ! 🚀**
+**🎉 Félicitations ! Votre application Pakiparc est maintenant prête à conquérir le marché de la gestion de flotte ! 🚀**
 
 ---
 

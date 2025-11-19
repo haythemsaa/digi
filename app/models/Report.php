@@ -4,7 +4,7 @@
  * Report Model
  * Handles report generation and management
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

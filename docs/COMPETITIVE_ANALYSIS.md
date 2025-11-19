@@ -1,4 +1,4 @@
-# DigiParc - Analyse Concurrentielle & Recommandations
+# Pakiparc - Analyse Concurrentielle & Recommandations
 
 **Date:** 19 Novembre 2025
 **Version:** 2.0.0
@@ -161,9 +161,9 @@ Le marché de la gestion de flotte devrait atteindre **$55.6 milliards d'ici 202
 
 ## 📋 Comparaison des Fonctionnalités
 
-### DigiParc v2.0.0 vs Concurrents
+### Pakiparc v2.0.0 vs Concurrents
 
-| Fonctionnalité | DigiParc 2.0 | Samsara | Verizon | Motive | Geotab | Azuga |
+| Fonctionnalité | Pakiparc 2.0 | Samsara | Verizon | Motive | Geotab | Azuga |
 |----------------|--------------|---------|---------|--------|---------|-------|
 | **Multi-tenant SaaS** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **GPS Real-time** | ✅ | ✅ (30s) | ✅ (30s) | ✅ | ✅ | ✅ |
@@ -195,7 +195,7 @@ Le marché de la gestion de flotte devrait atteindre **$55.6 milliards d'ici 202
 
 ## 🎯 Nos Avantages Compétitifs Actuels
 
-### ✅ **Forces de DigiParc**
+### ✅ **Forces de Pakiparc**
 
 1. **Module Financier Complet** - Aucun concurrent n'offre cela de base
 2. **Gestion Procurement Intégrée** - Unique sur le marché
@@ -570,9 +570,9 @@ Le marché de la gestion de flotte devrait atteindre **$55.6 milliards d'ici 202
 
 **Fonctionnalités:**
 - Commandes vocales
-- "Ok DigiParc, où est mon prochain arrêt?"
-- "Ok DigiParc, rapport incident"
-- "Ok DigiParc, appelle dispatcher"
+- "Ok Pakiparc, où est mon prochain arrêt?"
+- "Ok Pakiparc, rapport incident"
+- "Ok Pakiparc, appelle dispatcher"
 - Intégration Alexa/Google Assistant
 - Multilingual support
 - Réponses contextuelles
@@ -740,7 +740,7 @@ Un assistant IA qui:
 4. **Go-to-Market:**
    - Mettre en avant nos modules financiers uniques
    - Ajouter IA progressivement
-   - Marketing: "Intelligence + Finance = DigiParc"
+   - Marketing: "Intelligence + Finance = Pakiparc"
 
 ### **Budget Estimé (P0 Features):**
 

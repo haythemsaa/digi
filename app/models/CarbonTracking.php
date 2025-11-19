@@ -4,7 +4,7 @@
  * Carbon Tracking Model
  * Handles CO2 emissions tracking and CSR reporting
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 class CarbonTracking

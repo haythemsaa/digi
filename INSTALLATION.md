@@ -1,4 +1,4 @@
-# Guide d'Installation Complet - DigiParc Fleet Management
+# Guide d'Installation Complet - Pakiparc Fleet Management
 
 ## 📋 Table des matières
 1. [Prérequis](#prérequis)
@@ -49,7 +49,7 @@ C:\xampp\htdocs\digi
 
 1. Ouvrir phpMyAdmin: http://localhost/phpmyadmin
 2. Créer une nouvelle base de données:
-   - Nom: `digiparc_fleet`
+   - Nom: `pakiparc_fleet`
    - Collation: `utf8mb4_unicode_ci`
 3. Sélectionner la base de données
 4. Cliquer sur "Importer"
@@ -61,7 +61,7 @@ C:\xampp\htdocs\digi
 Éditer `config/database.php`:
 ```php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'digiparc_fleet');
+define('DB_NAME', 'pakiparc_fleet');
 define('DB_USER', 'root');
 define('DB_PASS', ''); // Vide par défaut sur XAMPP
 ```
@@ -85,7 +85,7 @@ mkdir C:\xampp\htdocs\digi\public\uploads\documents
 Ouvrir dans le navigateur: http://localhost/digi
 
 **Identifiants par défaut:**
-- Email: `admin@digiparc.local`
+- Email: `admin@pakiparc.local`
 - Mot de passe: `admin123`
 
 ---
@@ -138,28 +138,28 @@ sudo chmod -R 755 digi
 sudo mysql -u root
 
 # Dans MySQL:
-CREATE DATABASE digiparc_fleet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'digiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse123!';
-GRANT ALL PRIVILEGES ON digiparc_fleet.* TO 'digiparc_user'@'localhost';
+CREATE DATABASE pakiparc_fleet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'pakiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse123!';
+GRANT ALL PRIVILEGES ON pakiparc_fleet.* TO 'pakiparc_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 
 # Importer le schéma
-sudo mysql -u digiparc_user -p digiparc_fleet < /var/www/html/digi/database/schema.sql
+sudo mysql -u pakiparc_user -p pakiparc_fleet < /var/www/html/digi/database/schema.sql
 ```
 
 ### 4. Configuration Apache Virtual Host
 
 ```bash
 # Créer le fichier de configuration
-sudo nano /etc/apache2/sites-available/digiparc.conf
+sudo nano /etc/apache2/sites-available/pakiparc.conf
 ```
 
 Contenu du fichier:
 ```apache
 <VirtualHost *:80>
-    ServerName digiparc.local
-    ServerAlias www.digiparc.local
+    ServerName pakiparc.local
+    ServerAlias www.pakiparc.local
     DocumentRoot /var/www/html/digi
 
     <Directory /var/www/html/digi>
@@ -168,14 +168,14 @@ Contenu du fichier:
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/digiparc-error.log
-    CustomLog ${APACHE_LOG_DIR}/digiparc-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/pakiparc-error.log
+    CustomLog ${APACHE_LOG_DIR}/pakiparc-access.log combined
 </VirtualHost>
 ```
 
 ```bash
 # Activer le site
-sudo a2ensite digiparc.conf
+sudo a2ensite pakiparc.conf
 
 # Désactiver le site par défaut (optionnel)
 sudo a2dissite 000-default.conf
@@ -185,7 +185,7 @@ sudo systemctl restart apache2
 
 # Ajouter au fichier hosts
 sudo nano /etc/hosts
-# Ajouter: 127.0.0.1    digiparc.local
+# Ajouter: 127.0.0.1    pakiparc.local
 ```
 
 ### 5. Configuration de l'application
@@ -197,8 +197,8 @@ sudo nano /var/www/html/digi/config/database.php
 
 ```php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'digiparc_fleet');
-define('DB_USER', 'digiparc_user');
+define('DB_NAME', 'pakiparc_fleet');
+define('DB_USER', 'pakiparc_user');
 define('DB_PASS', 'VotreMotDePasse123!');
 ```
 
@@ -208,7 +208,7 @@ sudo nano /var/www/html/digi/config/config.php
 ```
 
 ```php
-define('APP_URL', 'http://digiparc.local');
+define('APP_URL', 'http://pakiparc.local');
 define('APP_ENV', 'production');
 define('ENCRYPTION_KEY', 'générer-une-clé-aléatoire-sécurisée');
 ```
@@ -223,7 +223,7 @@ sudo chmod -R 775 /var/www/html/digi/public/uploads
 
 ### 7. Accéder à l'application
 
-Ouvrir dans le navigateur: http://digiparc.local
+Ouvrir dans le navigateur: http://pakiparc.local
 
 ---
 
@@ -262,9 +262,9 @@ mysql_secure_installation
 mysql -u root -p
 
 # Créer la base de données
-CREATE DATABASE digiparc_fleet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'digiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse123!';
-GRANT ALL PRIVILEGES ON digiparc_fleet.* TO 'digiparc_user'@'localhost';
+CREATE DATABASE pakiparc_fleet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'pakiparc_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse123!';
+GRANT ALL PRIVILEGES ON pakiparc_fleet.* TO 'pakiparc_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -276,7 +276,7 @@ EXIT;
 sudo cp -R digi /usr/local/var/www/
 
 # Importer le schéma
-mysql -u digiparc_user -p digiparc_fleet < /usr/local/var/www/digi/database/schema.sql
+mysql -u pakiparc_user -p pakiparc_fleet < /usr/local/var/www/digi/database/schema.sql
 
 # Permissions
 sudo chown -R _www:_www /usr/local/var/www/digi
@@ -309,7 +309,7 @@ php -r "echo bin2hex(random_bytes(32));"
 ```bash
 # Installer Certbot (Let's Encrypt)
 sudo apt install certbot python3-certbot-apache
-sudo certbot --apache -d digiparc.votre-domaine.com
+sudo certbot --apache -d pakiparc.votre-domaine.com
 ```
 
 ### Email (SMTP)
@@ -336,7 +336,7 @@ define('MAPS_API_KEY', 'votre-clé-google-maps');
 ### Tests de base
 
 1. **Page de login** : http://localhost/digi
-2. **Connexion admin** : admin@digiparc.local / admin123
+2. **Connexion admin** : admin@pakiparc.local / admin123
 3. **Dashboard** : Devrait afficher les statistiques
 4. **Ajout de véhicule** : Tester l'ajout d'un véhicule
 5. **Upload de fichiers** : Vérifier que les uploads fonctionnent
@@ -365,7 +365,7 @@ sudo tail -f /var/log/mysql/error.log
 sudo systemctl status mysql
 
 # Tester la connexion
-mysql -u digiparc_user -p digiparc_fleet
+mysql -u pakiparc_user -p pakiparc_fleet
 
 # Vérifier les credentials dans config/database.php
 ```
@@ -416,7 +416,7 @@ php -m | grep -E 'pdo|mysql|mbstring|json'
 ## Support
 
 Pour plus d'aide:
-- 📧 Email: support@digiparc.local
+- 📧 Email: support@pakiparc.local
 - 📚 Documentation complète: README.md
 - 🐛 Rapporter un bug: GitHub Issues
 

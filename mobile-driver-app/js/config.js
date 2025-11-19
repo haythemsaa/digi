@@ -1,5 +1,5 @@
 /**
- * DigiParc Driver App - Configuration
+ * Pakiparc Driver App - Configuration
  */
 
 const CONFIG = {
@@ -24,11 +24,11 @@ const CONFIG = {
 
     // Local Storage Keys
     STORAGE_KEYS: {
-        AUTH_TOKEN: 'digiparc_driver_token',
-        USER_DATA: 'digiparc_driver_user',
-        REMEMBER_ME: 'digiparc_driver_remember',
-        OFFLINE_DATA: 'digiparc_driver_offline',
-        CURRENT_TRIP: 'digiparc_driver_current_trip'
+        AUTH_TOKEN: 'pakiparc_driver_token',
+        USER_DATA: 'pakiparc_driver_user',
+        REMEMBER_ME: 'pakiparc_driver_remember',
+        OFFLINE_DATA: 'pakiparc_driver_offline',
+        CURRENT_TRIP: 'pakiparc_driver_current_trip'
     },
 
     // Geolocation

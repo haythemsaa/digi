@@ -1,6 +1,6 @@
 {
-  "name": "DigiParc Fleet Management",
-  "short_name": "DigiParc",
+  "name": "Pakiparc Fleet Management",
+  "short_name": "Pakiparc",
   "description": "Professional Fleet Management System with GPS Tracking, Maintenance, and Transport Management",
   "start_url": "/",
   "display": "standalone",

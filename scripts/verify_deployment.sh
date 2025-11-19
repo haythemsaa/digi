@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# DigiParc - Script de Vérification Post-Déploiement
+# Pakiparc - Script de Vérification Post-Déploiement
 # Vérifie que TOUT fonctionne correctement après le déploiement
 ###############################################################################
 
@@ -41,7 +41,7 @@ warn() {
 ###############################################################################
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  DigiParc - Vérification Post-Déploiement"
+echo "  Pakiparc - Vérification Post-Déploiement"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -124,7 +124,7 @@ echo ""
 
 # 7. CRON jobs
 echo "⏰ Vérification des CRON jobs..."
-if crontab -l 2>/dev/null | grep -q "digiparc"; then
+if crontab -l 2>/dev/null | grep -q "pakiparc"; then
     echo -e "  CRON jobs configurés: ${GREEN}✓${NC}"
 else
     warn "CRON jobs non configurés"

@@ -1,4 +1,4 @@
-# DigiParc Fleet Management - API Documentation
+# Pakiparc Fleet Management - API Documentation
 
 ## Base URL
 ```
@@ -16,7 +16,7 @@ All API endpoints (except `/login`) require authentication using a Bearer token.
 **Request:**
 ```json
 {
-  "email": "admin@digiparc.local",
+  "email": "admin@pakiparc.local",
   "password": "admin123"
 }
 ```
@@ -29,9 +29,9 @@ All API endpoints (except `/login`) require authentication using a Bearer token.
   "user": {
     "id": 1,
     "username": "admin",
-    "email": "admin@digiparc.local",
+    "email": "admin@pakiparc.local",
     "first_name": "Admin",
-    "last_name": "DigiParc",
+    "last_name": "Pakiparc",
     "role": "admin"
   }
 }
@@ -61,7 +61,7 @@ Returns API version and available endpoints.
 **Response:**
 ```json
 {
-  "name": "DigiParc Fleet Management API",
+  "name": "Pakiparc Fleet Management API",
   "version": "1.0.0",
   "endpoints": { ... }
 }
@@ -394,7 +394,7 @@ All errors follow this format:
 ```bash
 curl -X POST http://localhost/digi/api/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@digiparc.local","password":"admin123"}'
+  -d '{"email":"admin@pakiparc.local","password":"admin123"}'
 ```
 
 **Get Vehicles (with token):**
@@ -428,7 +428,7 @@ const response = await fetch('http://localhost/digi/api/login', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    email: 'admin@digiparc.local',
+    email: 'admin@pakiparc.local',
     password: 'admin123'
   })
 });
@@ -489,7 +489,7 @@ For production, configure specific allowed origins in the API controller.
 ## Support
 
 For API support or questions:
-- Email: support@digiparc.local
+- Email: support@pakiparc.local
 - Documentation: See README.md for full system documentation
 
 ---

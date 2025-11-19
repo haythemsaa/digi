@@ -4,7 +4,7 @@
  * Internationalization (i18n) Helper
  * Handles multi-language support
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 

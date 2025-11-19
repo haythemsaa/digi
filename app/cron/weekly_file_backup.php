@@ -7,7 +7,7 @@
  * Usage: php /path/to/app/cron/weekly_file_backup.php
  * Or add to crontab: 0 4 * * 0 php /path/to/app/cron/weekly_file_backup.php
  *
- * @author DigiParc Team
+ * @author Pakiparc Team
  * @version 1.0
  */
 
@@ -15,7 +15,7 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../services/BackupService.php';
 
-echo "=== DigiParc Weekly File Backup ===\n";
+echo "=== Pakiparc Weekly File Backup ===\n";
 echo "Started at: " . date('Y-m-d H:i:s') . "\n\n";
 
 try {
