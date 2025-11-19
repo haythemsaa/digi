@@ -49,3 +49,4 @@ define('MAPS_API_KEY', ''); // Google Maps or OpenStreetMap
 
 // Load Helpers
 require_once APP_PATH . '/helpers/subscription_helper.php';
+require_once APP_PATH . '/helpers/multi_tenant_helper.php';

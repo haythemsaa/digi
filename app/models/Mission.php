@@ -2,9 +2,35 @@
 
 class Mission {
     private $db;
+    private $companyId;
 
     public function __construct() {
         $this->db = new Database();
+        $this->companyId = getCurrentCompanyId();
+
+        // Ensure company context exists
+        if (!$this->companyId && !isSuperAdmin()) {
+            throw new Exception('Company context required');
+        }
+    }
+
+    /**
+     * Get company filter for SQL queries
+     */
+    private function getCompanyFilter($tableAlias = 'm') {
+        if (isSuperAdmin()) {
+            return '1=1'; // No filter for super admins
+        }
+        return "{$tableAlias}.company_id = :company_id";
+    }
+
+    /**
+     * Bind company ID to query
+     */
+    private function bindCompanyId() {
+        if (!isSuperAdmin()) {
+            $this->db->bind(':company_id', $this->companyId);
+        }
     }
 
     // ========================================
@@ -12,6 +38,9 @@ class Mission {
     // ========================================
 
     public function getAllMissions($status = null, $limit = 100) {
+        $companyFilter = $this->getCompanyFilter('m');
+        $statusFilter = $status ? "AND m.status = :status" : "";
+
         $sql = "SELECT m.*,
             v.registration_number,
             CONCAT(d.first_name, ' ', d.last_name) as driver_name,
@@ -19,15 +48,12 @@ class Mission {
             FROM missions m
             LEFT JOIN vehicles v ON m.assigned_vehicle_id = v.id
             LEFT JOIN drivers d ON m.assigned_driver_id = d.id
-            LEFT JOIN mission_billing mb ON m.id = mb.mission_id";
-
-        if ($status) {
-            $sql .= " WHERE m.status = :status";
-        }
-
-        $sql .= " ORDER BY m.created_at DESC LIMIT :limit";
+            LEFT JOIN mission_billing mb ON m.id = mb.mission_id
+            WHERE {$companyFilter} {$statusFilter}
+            ORDER BY m.created_at DESC LIMIT :limit";
 
         $this->db->query($sql);
+        $this->bindCompanyId();
 
         if ($status) {
             $this->db->bind(':status', $status);
@@ -38,6 +64,8 @@ class Mission {
     }
 
     public function getMissionById($id) {
+        $companyFilter = $this->getCompanyFilter('m');
+
         $this->db->query("SELECT m.*,
             v.registration_number, v.brand, v.model,
             CONCAT(d.first_name, ' ', d.last_name) as driver_name,
@@ -45,9 +73,10 @@ class Mission {
             FROM missions m
             LEFT JOIN vehicles v ON m.assigned_vehicle_id = v.id
             LEFT JOIN drivers d ON m.assigned_driver_id = d.id
-            WHERE m.id = :id");
+            WHERE m.id = :id AND {$companyFilter}");
 
         $this->db->bind(':id', $id);
+        $this->bindCompanyId();
         return $this->db->fetch();
     }
 
@@ -56,19 +85,20 @@ class Mission {
         $missionNumber = 'MSN' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
         $this->db->query("INSERT INTO missions
-            (mission_number, mission_type, client_name, client_phone, client_email, client_address,
+            (company_id, mission_number, mission_type, client_name, client_phone, client_email, client_address,
              description, priority, status, scheduled_start, scheduled_end,
              assigned_vehicle_id, assigned_driver_id,
              pickup_location, pickup_latitude, pickup_longitude,
              delivery_location, delivery_latitude, delivery_longitude,
              estimated_distance_km, estimated_duration_minutes, notes, created_by)
-            VALUES (:mission_number, :mission_type, :client_name, :client_phone, :client_email, :client_address,
+            VALUES (:company_id, :mission_number, :mission_type, :client_name, :client_phone, :client_email, :client_address,
                     :description, :priority, :status, :scheduled_start, :scheduled_end,
                     :assigned_vehicle_id, :assigned_driver_id,
                     :pickup_location, :pickup_latitude, :pickup_longitude,
                     :delivery_location, :delivery_latitude, :delivery_longitude,
                     :estimated_distance_km, :estimated_duration_minutes, :notes, :created_by)");
 
+        $this->db->bind(':company_id', $this->companyId);
         $this->db->bind(':mission_number', $missionNumber);
         $this->db->bind(':mission_type', $data['mission_type']);
         $this->db->bind(':client_name', $data['client_name']);
@@ -106,24 +136,27 @@ class Mission {
     }
 
     public function updateMission($id, $data) {
-        $this->db->query("UPDATE missions SET
-            mission_type = :mission_type,
-            client_name = :client_name,
-            client_phone = :client_phone,
-            client_email = :client_email,
-            description = :description,
-            priority = :priority,
-            scheduled_start = :scheduled_start,
-            scheduled_end = :scheduled_end,
-            assigned_vehicle_id = :assigned_vehicle_id,
-            assigned_driver_id = :assigned_driver_id,
-            pickup_location = :pickup_location,
-            delivery_location = :delivery_location,
-            estimated_distance_km = :estimated_distance_km,
-            notes = :notes
-            WHERE id = :id");
+        $companyFilter = $this->getCompanyFilter('m');
+
+        $this->db->query("UPDATE missions m SET
+            m.mission_type = :mission_type,
+            m.client_name = :client_name,
+            m.client_phone = :client_phone,
+            m.client_email = :client_email,
+            m.description = :description,
+            m.priority = :priority,
+            m.scheduled_start = :scheduled_start,
+            m.scheduled_end = :scheduled_end,
+            m.assigned_vehicle_id = :assigned_vehicle_id,
+            m.assigned_driver_id = :assigned_driver_id,
+            m.pickup_location = :pickup_location,
+            m.delivery_location = :delivery_location,
+            m.estimated_distance_km = :estimated_distance_km,
+            m.notes = :notes
+            WHERE m.id = :id AND {$companyFilter}");
 
         $this->db->bind(':id', $id);
+        $this->bindCompanyId();
         $this->db->bind(':mission_type', $data['mission_type']);
         $this->db->bind(':client_name', $data['client_name']);
         $this->db->bind(':client_phone', $data['client_phone'] ?? null);
@@ -145,21 +178,29 @@ class Mission {
     public function updateStatus($id, $newStatus) {
         // Get current status
         $mission = $this->getMissionById($id);
-        $oldStatus = $mission['status'];
+        if (!$mission) {
+            return false;
+        }
 
-        $this->db->query("UPDATE missions SET status = :status WHERE id = :id");
+        $oldStatus = $mission['status'];
+        $companyFilter = $this->getCompanyFilter('m');
+
+        $this->db->query("UPDATE missions m SET m.status = :status WHERE m.id = :id AND {$companyFilter}");
         $this->db->bind(':id', $id);
         $this->db->bind(':status', $newStatus);
+        $this->bindCompanyId();
 
         if ($this->db->execute()) {
             // Update timestamps
             if ($newStatus === 'in_progress') {
-                $this->db->query("UPDATE missions SET actual_start = NOW() WHERE id = :id");
+                $this->db->query("UPDATE missions m SET m.actual_start = NOW() WHERE m.id = :id AND {$companyFilter}");
                 $this->db->bind(':id', $id);
+                $this->bindCompanyId();
                 $this->db->execute();
             } elseif ($newStatus === 'completed') {
-                $this->db->query("UPDATE missions SET actual_end = NOW() WHERE id = :id");
+                $this->db->query("UPDATE missions m SET m.actual_end = NOW() WHERE m.id = :id AND {$companyFilter}");
                 $this->db->bind(':id', $id);
+                $this->bindCompanyId();
                 $this->db->execute();
             }
 
@@ -177,16 +218,20 @@ class Mission {
     // ========================================
 
     public function getMissionItems($missionId) {
-        $this->db->query("SELECT * FROM mission_items WHERE mission_id = :mission_id ORDER BY created_at");
+        $companyFilter = $this->getCompanyFilter('mi');
+
+        $this->db->query("SELECT * FROM mission_items mi WHERE mi.mission_id = :mission_id AND {$companyFilter} ORDER BY mi.created_at");
         $this->db->bind(':mission_id', $missionId);
+        $this->bindCompanyId();
         return $this->db->fetchAll();
     }
 
     public function addMissionItem($data) {
         $this->db->query("INSERT INTO mission_items
-            (mission_id, item_name, item_description, quantity, weight_kg, volume_m3, fragile, temperature_controlled, reference_number)
-            VALUES (:mission_id, :item_name, :item_description, :quantity, :weight_kg, :volume_m3, :fragile, :temperature_controlled, :reference_number)");
+            (company_id, mission_id, item_name, item_description, quantity, weight_kg, volume_m3, fragile, temperature_controlled, reference_number)
+            VALUES (:company_id, :mission_id, :item_name, :item_description, :quantity, :weight_kg, :volume_m3, :fragile, :temperature_controlled, :reference_number)");
 
+        $this->db->bind(':company_id', $this->companyId);
         $this->db->bind(':mission_id', $data['mission_id']);
         $this->db->bind(':item_name', $data['item_name']);
         $this->db->bind(':item_description', $data['item_description'] ?? null);
@@ -205,8 +250,11 @@ class Mission {
     // ========================================
 
     public function getMissionBilling($missionId) {
-        $this->db->query("SELECT * FROM mission_billing WHERE mission_id = :mission_id");
+        $companyFilter = $this->getCompanyFilter('mb');
+
+        $this->db->query("SELECT * FROM mission_billing mb WHERE mb.mission_id = :mission_id AND {$companyFilter}");
         $this->db->bind(':mission_id', $missionId);
+        $this->bindCompanyId();
         return $this->db->fetch();
     }
 
@@ -221,11 +269,12 @@ class Mission {
         $totalAmount = $subtotal + $taxAmount - ($data['discount_amount'] ?? 0);
 
         $this->db->query("INSERT INTO mission_billing
-            (mission_id, invoice_number, invoice_date, base_rate, distance_charge, time_charge, additional_charges,
+            (company_id, mission_id, invoice_number, invoice_date, base_rate, distance_charge, time_charge, additional_charges,
              subtotal, tax_rate, tax_amount, discount_amount, total_amount, payment_status)
-            VALUES (:mission_id, :invoice_number, :invoice_date, :base_rate, :distance_charge, :time_charge, :additional_charges,
+            VALUES (:company_id, :mission_id, :invoice_number, :invoice_date, :base_rate, :distance_charge, :time_charge, :additional_charges,
                     :subtotal, :tax_rate, :tax_amount, :discount_amount, :total_amount, 'pending')");
 
+        $this->db->bind(':company_id', $this->companyId);
         $this->db->bind(':mission_id', $data['mission_id']);
         $this->db->bind(':invoice_number', $invoiceNumber);
         $this->db->bind(':invoice_date', date('Y-m-d'));
@@ -243,14 +292,17 @@ class Mission {
     }
 
     public function updateBillingPayment($billingId, $paymentMethod, $paymentReference = null) {
-        $this->db->query("UPDATE mission_billing SET
-            payment_status = 'paid',
-            payment_method = :payment_method,
-            payment_date = CURDATE(),
-            payment_reference = :payment_reference
-            WHERE id = :id");
+        $companyFilter = $this->getCompanyFilter('mb');
+
+        $this->db->query("UPDATE mission_billing mb SET
+            mb.payment_status = 'paid',
+            mb.payment_method = :payment_method,
+            mb.payment_date = CURDATE(),
+            mb.payment_reference = :payment_reference
+            WHERE mb.id = :id AND {$companyFilter}");
 
         $this->db->bind(':id', $billingId);
+        $this->bindCompanyId();
         $this->db->bind(':payment_method', $paymentMethod);
         $this->db->bind(':payment_reference', $paymentReference);
 
@@ -262,22 +314,26 @@ class Mission {
     // ========================================
 
     public function getMissionUpdates($missionId) {
+        $companyFilter = $this->getCompanyFilter('mu');
+
         $this->db->query("SELECT mu.*,
             CONCAT(u.first_name, ' ', u.last_name) as updated_by_name
             FROM mission_updates mu
             LEFT JOIN users u ON mu.created_by = u.id
-            WHERE mu.mission_id = :mission_id
+            WHERE mu.mission_id = :mission_id AND {$companyFilter}
             ORDER BY mu.created_at DESC");
 
         $this->db->bind(':mission_id', $missionId);
+        $this->bindCompanyId();
         return $this->db->fetchAll();
     }
 
     public function addUpdate($missionId, $updateType, $oldStatus = null, $newStatus = null, $message = null) {
         $this->db->query("INSERT INTO mission_updates
-            (mission_id, update_type, old_status, new_status, message, created_by)
-            VALUES (:mission_id, :update_type, :old_status, :new_status, :message, :created_by)");
+            (company_id, mission_id, update_type, old_status, new_status, message, created_by)
+            VALUES (:company_id, :mission_id, :update_type, :old_status, :new_status, :message, :created_by)");
 
+        $this->db->bind(':company_id', $this->companyId);
         $this->db->bind(':mission_id', $missionId);
         $this->db->bind(':update_type', $updateType);
         $this->db->bind(':old_status', $oldStatus);
@@ -293,26 +349,33 @@ class Mission {
     // ========================================
 
     public function getDashboardStats() {
+        $companyFilter = $this->getCompanyFilter('m');
+
         $this->db->query("SELECT
             COUNT(*) as total_missions,
-            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
-            SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as assigned_count,
-            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count,
-            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
-            SUM(CASE WHEN status = 'completed' AND DATE(actual_end) = CURDATE() THEN 1 ELSE 0 END) as completed_today
-            FROM missions
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            SUM(CASE WHEN m.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+            SUM(CASE WHEN m.status = 'assigned' THEN 1 ELSE 0 END) as assigned_count,
+            SUM(CASE WHEN m.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count,
+            SUM(CASE WHEN m.status = 'completed' THEN 1 ELSE 0 END) as completed_count,
+            SUM(CASE WHEN m.status = 'completed' AND DATE(m.actual_end) = CURDATE() THEN 1 ELSE 0 END) as completed_today
+            FROM missions m
+            WHERE {$companyFilter}
+            AND m.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
 
+        $this->bindCompanyId();
         $stats = $this->db->fetch();
 
         // Revenue stats
+        $revenueFilter = $this->getCompanyFilter('mb');
         $this->db->query("SELECT
-            SUM(total_amount) as total_revenue,
-            SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) as paid_revenue,
-            SUM(CASE WHEN payment_status = 'pending' OR payment_status = 'overdue' THEN total_amount ELSE 0 END) as pending_revenue
-            FROM mission_billing
-            WHERE invoice_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            SUM(mb.total_amount) as total_revenue,
+            SUM(CASE WHEN mb.payment_status = 'paid' THEN mb.total_amount ELSE 0 END) as paid_revenue,
+            SUM(CASE WHEN mb.payment_status = 'pending' OR mb.payment_status = 'overdue' THEN mb.total_amount ELSE 0 END) as pending_revenue
+            FROM mission_billing mb
+            WHERE {$revenueFilter}
+            AND mb.invoice_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
 
+        $this->bindCompanyId();
         $revenue = $this->db->fetch();
         $stats = array_merge($stats, $revenue);
 
@@ -320,21 +383,27 @@ class Mission {
     }
 
     public function getUpcomingMissions($days = 7) {
+        $companyFilter = $this->getCompanyFilter('m');
+
         $this->db->query("SELECT m.*,
             v.registration_number,
             CONCAT(d.first_name, ' ', d.last_name) as driver_name
             FROM missions m
             LEFT JOIN vehicles v ON m.assigned_vehicle_id = v.id
             LEFT JOIN drivers d ON m.assigned_driver_id = d.id
-            WHERE m.scheduled_start BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL :days DAY)
+            WHERE {$companyFilter}
+            AND m.scheduled_start BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL :days DAY)
             AND m.status NOT IN ('completed', 'cancelled')
             ORDER BY m.scheduled_start ASC");
 
+        $this->bindCompanyId();
         $this->db->bind(':days', $days);
         return $this->db->fetchAll();
     }
 
     public function getMissionsByDateRange($startDate, $endDate) {
+        $companyFilter = $this->getCompanyFilter('m');
+
         $this->db->query("SELECT m.*,
             v.registration_number,
             CONCAT(d.first_name, ' ', d.last_name) as driver_name,
@@ -343,9 +412,11 @@ class Mission {
             LEFT JOIN vehicles v ON m.assigned_vehicle_id = v.id
             LEFT JOIN drivers d ON m.assigned_driver_id = d.id
             LEFT JOIN mission_billing mb ON m.id = mb.mission_id
-            WHERE DATE(m.scheduled_start) BETWEEN :start_date AND :end_date
+            WHERE {$companyFilter}
+            AND DATE(m.scheduled_start) BETWEEN :start_date AND :end_date
             ORDER BY m.scheduled_start ASC");
 
+        $this->bindCompanyId();
         $this->db->bind(':start_date', $startDate);
         $this->db->bind(':end_date', $endDate);
         return $this->db->fetchAll();
