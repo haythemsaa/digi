@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#007bff">
+    <meta name="description" content="Réservez votre taxi ou bus facilement">
+    <title>DigiParc Transport - Passagers</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-container">
+                <div class="logo">
+                    <i class="fas fa-taxi fa-3x text-primary"></i>
+                    <h1>DigiParc Transport</h1>
+                    <p>Votre transport à portée de main</p>
+                </div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label><i class="fas fa-phone"></i> Numéro de Téléphone</label>
+                        <input type="tel" id="phone" placeholder="+216 XX XXX XXX" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Code PIN</label>
+                        <input type="password" id="pin" placeholder="••••" maxlength="4" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Connexion
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="#" id="register-link" class="text-primary">
+                        Pas encore de compte? Inscrivez-vous
+                    </a>
+                </div>
+
+                <div id="offline-indicator" class="offline-badge" style="display: none;">
+                    <i class="fas fa-wifi-slash"></i> Mode hors ligne
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="main-screen" class="screen">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">Bonjour, <span id="user-name">Passager</span></h3>
+                            <small class="text-muted" id="user-points">0 points fidélité</small>
+                        </div>
+                        <button class="btn btn-sm btn-light" id="profile-btn">
+                            <i class="fas fa-user-circle fa-2x"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home View -->
+            <div id="home-view" class="view active">
+                <div class="container pt-3">
+                    <!-- Quick Book Card -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-map-marker-alt text-danger"></i> Où allez-vous?</h5>
+
+                            <div class="form-group">
+                                <label>Point de départ</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-circle text-success"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="pickup-location" placeholder="Votre position actuelle">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" id="use-my-location">
+                                            <i class="fas fa-crosshairs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Destination</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-circle text-danger"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="dropoff-location" placeholder="Où allez-vous?">
+                                </div>
+                            </div>
+
+                            <!-- Transport Type Selection -->
+                            <div class="form-group">
+                                <label>Type de transport</label>
+                                <div class="transport-type-selector">
+                                    <button class="transport-type-btn active" data-type="taxi">
+                                        <i class="fas fa-taxi"></i>
+                                        <span>Taxi</span>
+                                        <small>Immédiat</small>
+                                    </button>
+                                    <button class="transport-type-btn" data-type="bus">
+                                        <i class="fas fa-bus"></i>
+                                        <span>Bus</span>
+                                        <small>Économique</small>
+                                    </button>
+                                    <button class="transport-type-btn" data-type="shuttle">
+                                        <i class="fas fa-shuttle-van"></i>
+                                        <span>Navette</span>
+                                        <small>Partagé</small>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary btn-block btn-lg" id="book-ride-btn">
+                                <i class="fas fa-search"></i> Rechercher un Véhicule
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Trips -->
+                    <h6 class="mb-3"><i class="fas fa-history"></i> Courses Récentes</h6>
+                    <div id="recent-trips-list"></div>
+                </div>
+            </div>
+
+            <!-- My Trips View -->
+            <div id="trips-view" class="view">
+                <div class="container pt-3">
+                    <h5 class="mb-3"><i class="fas fa-list"></i> Mes Courses</h5>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-pills mb-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-filter="all">Toutes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-filter="in_progress">En cours</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-filter="completed">Terminées</a>
+                        </li>
+                    </ul>
+
+                    <div id="trips-list"></div>
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profile-view" class="view">
+                <div class="container pt-3">
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                            <h4 id="profile-name">Nom Passager</h4>
+                            <p class="text-muted" id="profile-phone">+216 XX XXX XXX</p>
+
+                            <div class="row mt-3">
+                                <div class="col-6">
+                                    <h4 id="profile-trips">0</h4>
+                                    <small class="text-muted">Courses</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 id="profile-points">0</h4>
+                                    <small class="text-muted">Points</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Paramètres</h6>
+                            <div class="list-group list-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-credit-card"></i> Moyens de Paiement
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-bell"></i> Notifications
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-history"></i> Historique
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="fas fa-question-circle"></i> Aide
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action text-danger" id="logout-btn">
+                                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-view="home">
+                    <i class="fas fa-home"></i>
+                    <span>Accueil</span>
+                </button>
+                <button class="nav-item" data-view="trips">
+                    <i class="fas fa-list"></i>
+                    <span>Mes Courses</span>
+                </button>
+                <button class="nav-item" data-view="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profil</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Booking Modal -->
+        <div id="booking-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Détails de la Course</h5>
+                    <button class="close-btn" id="close-booking-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="booking-map" style="height: 200px;"></div>
+
+                    <div class="mt-3">
+                        <h6>Tarif Estimé</h6>
+                        <h2 class="text-primary" id="estimated-fare">-- TND</h2>
+                        <small class="text-muted">Distance: <span id="estimated-distance">--</span> km • Durée: <span id="estimated-duration">--</span> min</small>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Classe de Confort</h6>
+                        <select class="form-control" id="comfort-class">
+                            <option value="economy">Économique (-20%)</option>
+                            <option value="standard" selected>Standard</option>
+                            <option value="comfort">Confort (+30%)</option>
+                            <option value="premium">Premium (+60%)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Mode de Paiement</h6>
+                        <select class="form-control" id="payment-method">
+                            <option value="cash">Espèces</option>
+                            <option value="card">Carte Bancaire</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary btn-block btn-lg" id="confirm-booking-btn">
+                        <i class="fas fa-check"></i> Confirmer la Réservation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Details Modal -->
+        <div id="trip-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Détails de la Course</h5>
+                    <button class="close-btn" id="close-trip-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="trip-details-content">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- App JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
