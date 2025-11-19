@@ -1,13 +1,14 @@
 # DigiParc - Fleet Management System
 
-**Version 2.0.0 (Multi-Tenant)** | Production Ready 🚀
+**Version 3.0.0 (Enterprise Edition)** | Production Ready 🚀
 
-A comprehensive multi-tenant SaaS platform for fleet management, vehicle tracking, maintenance scheduling, and operational analytics.
+A comprehensive multi-tenant SaaS platform for fleet management, vehicle tracking, maintenance scheduling, operational analytics, carbon tracking, GDPR compliance, and advanced automation.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0%2B-orange.svg)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)
+![REST API](https://img.shields.io/badge/API-OpenAPI%203.0-green.svg)
 
 ---
 
@@ -49,6 +50,102 @@ A comprehensive multi-tenant SaaS platform for fleet management, vehicle trackin
 - Data isolation between companies
 - XSS and SQL injection protection
 - Secure file uploads
+- GDPR compliance with data portability and right to erasure
+
+### 📊 Advanced Analytics & KPIs
+- Real-time dashboard with 6 KPI categories
+- Interactive Chart.js visualizations
+- Trend analysis and performance comparisons
+- Vehicle and driver performance rankings
+- Custom date range reports
+- PDF/Excel export functionality
+
+### 🚨 Intelligent Alert System
+- 6 alert types (maintenance, document expiry, fuel anomaly, stock, delivery delay, geofence)
+- 4 priority levels (low, medium, high, critical)
+- Automated rule-based detection
+- CRON job for hourly monitoring
+- Alert acknowledgment workflow
+- Alert history and archiving
+
+### 📧 Multi-Channel Notifications
+- **Email** notifications via SMTP/PHPMailer
+- **SMS** via Twilio API
+- **Push** notifications (Web Push API)
+- **WhatsApp** Business API integration
+- User preference management
+- Quiet hours support
+- Priority threshold filtering
+- Comprehensive notification logging
+
+### 🌱 Carbon Tracking & CSR Reporting
+- CO₂ emission calculation using ADEME factors
+- Real-time emissions tracking per vehicle/driver/trip
+- Eco-score (0-100) calculation
+- Eco-driving recommendations with impact percentage
+- CSR report generation with PDF export
+- Carbon footprint trends and analytics
+- Compliance with environmental regulations
+
+### 🛡️ GDPR Compliance
+- Data portability (JSON export)
+- Right to erasure with anonymization
+- Consent management system
+- Audit logs for compliance
+- Data processing registry
+- Data breach reporting
+- Privacy policy and cookie management
+
+### 💾 Backup & Disaster Recovery
+- Automated database backups (mysqldump + gzip)
+- Automated file backups (tar.gz)
+- Rotation policies (7 daily, 4 weekly, 12 monthly)
+- Backup verification
+- Interactive restore script
+- RPO < 1 hour, RTO < 4 hours
+- CRON job automation
+
+### 🔌 Complete REST API
+- RESTful architecture with JWT authentication
+- Rate limiting (100 req/min)
+- Complete OpenAPI 3.0 documentation
+- Endpoints for all resources
+- Bearer token authentication
+- Error handling and validation
+- JSON response format
+
+### 🎨 Dark Mode & UX Improvements
+- CSS custom properties for theming
+- Automatic system theme detection
+- localStorage persistence
+- Smooth transitions
+- Complete component coverage
+- Chart.js dark mode integration
+- Floating toggle button
+
+### 💳 Payment Integration
+- Stripe Checkout integration
+- Webhook handling (5 event types)
+- Subscription management
+- Payment logging and history
+- Automatic billing
+
+### 💰 Dynamic Pricing Service
+- Usage-based pricing (€10/user, €5/vehicle, €3/driver)
+- Module-based pricing (€39-€149/module)
+- Package pricing (€149-€599)
+- Volume discounts up to 30%
+- Overage calculation
+- Invoice generation with VAT
+
+### 🌍 Multi-Language Support (i18n)
+- 5 languages: French, English, Spanish, German, Arabic
+- RTL support for Arabic
+- Locale-specific date/currency formats
+- Translation functions: t(), __(), _e()
+- Browser language detection
+- User preference storage
+- Language switcher component
 
 ---
 
