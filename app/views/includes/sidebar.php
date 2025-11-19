@@ -120,6 +120,14 @@
                     </a>
                 </li>
 
+                <!-- Smart Delivery AI -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'smart_delivery') ? 'active' : ''; ?>"
+                       href="<?php echo APP_URL; ?>/smart_delivery">
+                        <i class="fas fa-brain"></i> Smart Delivery AI
+                    </a>
+                </li>
+
                 <!-- Reports -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'reports') ? 'active' : ''; ?>"
