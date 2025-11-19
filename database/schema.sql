@@ -2099,3 +2099,231 @@ WHERE p.pack_code = 'delivery_pack' AND m.module_code IN ('gps', 'delivery', 'st
 INSERT INTO `subscription_pack_modules` (`pack_id`, `module_id`)
 SELECT p.id, m.id FROM `subscription_packs` p, `subscription_modules` m
 WHERE p.pack_code = 'fleet_pack' AND m.module_code IN ('gps', 'taxi', 'delivery', 'maintenance', 'stocks', 'hr', 'fuel', 'missions');
+
+-- ======================================================================
+-- FUEL MANAGEMENT MODULE
+-- ======================================================================
+
+-- Fuel Cards
+CREATE TABLE IF NOT EXISTS `fuel_cards` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `card_number` VARCHAR(50) UNIQUE NOT NULL,
+  `card_type` ENUM('physical', 'virtual') DEFAULT 'physical',
+  `provider` VARCHAR(100) DEFAULT NULL COMMENT 'Shell, Total, Agil, etc.',
+  `vehicle_id` INT(11) UNSIGNED DEFAULT NULL,
+  `driver_id` INT(11) UNSIGNED DEFAULT NULL,
+  `pin_code` VARCHAR(255) DEFAULT NULL COMMENT 'Encrypted PIN',
+  `daily_limit` DECIMAL(10,2) DEFAULT NULL,
+  `monthly_limit` DECIMAL(10,2) DEFAULT NULL,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `issue_date` DATE DEFAULT NULL,
+  `expiry_date` DATE DEFAULT NULL,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_card_number` (`card_number`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_driver` (`driver_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fuel Transactions
+CREATE TABLE IF NOT EXISTS `fuel_transactions` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `transaction_number` VARCHAR(50) UNIQUE NOT NULL,
+  `transaction_date` DATETIME NOT NULL,
+  `vehicle_id` INT(11) UNSIGNED NOT NULL,
+  `driver_id` INT(11) UNSIGNED DEFAULT NULL,
+  `fuel_card_id` INT(11) UNSIGNED DEFAULT NULL,
+  `fuel_type` ENUM('diesel', 'gasoline', 'lpg', 'cng', 'electric', 'hybrid') NOT NULL,
+  `quantity_liters` DECIMAL(10,2) NOT NULL,
+  `unit_price` DECIMAL(10,2) NOT NULL,
+  `total_amount` DECIMAL(10,2) NOT NULL,
+  `currency` VARCHAR(10) DEFAULT 'TND',
+  `odometer_reading` INT(11) DEFAULT NULL COMMENT 'Km at fill-up',
+  `station_name` VARCHAR(200) DEFAULT NULL,
+  `station_address` VARCHAR(255) DEFAULT NULL,
+  `latitude` DECIMAL(10,8) DEFAULT NULL,
+  `longitude` DECIMAL(11,8) DEFAULT NULL,
+  `payment_method` ENUM('fuel_card', 'cash', 'credit_card', 'invoice') DEFAULT 'fuel_card',
+  `invoice_number` VARCHAR(100) DEFAULT NULL,
+  `receipt_image` VARCHAR(255) DEFAULT NULL,
+  `is_full_tank` BOOLEAN DEFAULT TRUE,
+  `notes` TEXT,
+  `created_by` INT(11) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_transaction_date` (`transaction_date`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_driver` (`driver_id`),
+  KEY `idx_fuel_card` (`fuel_card_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fuel Consumption Analytics
+CREATE TABLE IF NOT EXISTS `fuel_consumption` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `vehicle_id` INT(11) UNSIGNED NOT NULL,
+  `period_start` DATE NOT NULL,
+  `period_end` DATE NOT NULL,
+  `total_fuel_liters` DECIMAL(10,2) NOT NULL,
+  `total_distance_km` DECIMAL(10,2) NOT NULL,
+  `average_consumption` DECIMAL(10,2) NOT NULL COMMENT 'Liters per 100km',
+  `total_cost` DECIMAL(10,2) NOT NULL,
+  `cost_per_km` DECIMAL(10,4) NOT NULL,
+  `number_of_fillups` INT(11) NOT NULL,
+  `co2_emissions_kg` DECIMAL(10,2) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_vehicle_period` (`vehicle_id`, `period_start`, `period_end`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fuel Price History (for tracking fuel price fluctuations)
+CREATE TABLE IF NOT EXISTS `fuel_prices` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `fuel_type` ENUM('diesel', 'gasoline', 'lpg', 'cng', 'electric') NOT NULL,
+  `price_per_liter` DECIMAL(10,2) NOT NULL,
+  `currency` VARCHAR(10) DEFAULT 'TND',
+  `effective_date` DATE NOT NULL,
+  `provider` VARCHAR(100) DEFAULT NULL,
+  `city` VARCHAR(100) DEFAULT NULL,
+  `is_official_price` BOOLEAN DEFAULT FALSE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_fuel_type_date` (`fuel_type`, `effective_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Fuel Alerts
+CREATE TABLE IF NOT EXISTS `fuel_alerts` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `alert_type` ENUM('high_consumption', 'price_spike', 'card_limit', 'suspicious_transaction', 'low_efficiency') NOT NULL,
+  `vehicle_id` INT(11) UNSIGNED DEFAULT NULL,
+  `driver_id` INT(11) UNSIGNED DEFAULT NULL,
+  `fuel_card_id` INT(11) UNSIGNED DEFAULT NULL,
+  `transaction_id` INT(11) UNSIGNED DEFAULT NULL,
+  `severity` ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT,
+  `threshold_value` DECIMAL(10,2) DEFAULT NULL,
+  `actual_value` DECIMAL(10,2) DEFAULT NULL,
+  `is_resolved` BOOLEAN DEFAULT FALSE,
+  `resolved_at` DATETIME DEFAULT NULL,
+  `resolved_by` INT(11) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_vehicle` (`vehicle_id`),
+  KEY `idx_alert_type` (`alert_type`),
+  KEY `idx_is_resolved` (`is_resolved`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ======================================================================
+-- MISSIONS MODULE
+-- ======================================================================
+
+-- Missions/Assignments
+CREATE TABLE IF NOT EXISTS `missions` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mission_number` VARCHAR(50) UNIQUE NOT NULL,
+  `mission_type` ENUM('delivery', 'pickup', 'transport', 'service', 'maintenance', 'other') NOT NULL,
+  `client_name` VARCHAR(255) NOT NULL,
+  `client_phone` VARCHAR(50) DEFAULT NULL,
+  `client_email` VARCHAR(255) DEFAULT NULL,
+  `client_address` TEXT,
+  `description` TEXT,
+  `priority` ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+  `status` ENUM('pending', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold') DEFAULT 'pending',
+  `scheduled_start` DATETIME DEFAULT NULL,
+  `scheduled_end` DATETIME DEFAULT NULL,
+  `actual_start` DATETIME DEFAULT NULL,
+  `actual_end` DATETIME DEFAULT NULL,
+  `assigned_vehicle_id` INT(11) UNSIGNED DEFAULT NULL,
+  `assigned_driver_id` INT(11) UNSIGNED DEFAULT NULL,
+  `pickup_location` VARCHAR(255) DEFAULT NULL,
+  `pickup_latitude` DECIMAL(10,8) DEFAULT NULL,
+  `pickup_longitude` DECIMAL(11,8) DEFAULT NULL,
+  `delivery_location` VARCHAR(255) DEFAULT NULL,
+  `delivery_latitude` DECIMAL(10,8) DEFAULT NULL,
+  `delivery_longitude` DECIMAL(11,8) DEFAULT NULL,
+  `estimated_distance_km` DECIMAL(10,2) DEFAULT NULL,
+  `actual_distance_km` DECIMAL(10,2) DEFAULT NULL,
+  `estimated_duration_minutes` INT(11) DEFAULT NULL,
+  `actual_duration_minutes` INT(11) DEFAULT NULL,
+  `notes` TEXT,
+  `created_by` INT(11) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mission_number` (`mission_number`),
+  KEY `idx_status` (`status`),
+  KEY `idx_vehicle` (`assigned_vehicle_id`),
+  KEY `idx_driver` (`assigned_driver_id`),
+  KEY `idx_scheduled_start` (`scheduled_start`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Mission Items (cargo/packages)
+CREATE TABLE IF NOT EXISTS `mission_items` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mission_id` INT(11) UNSIGNED NOT NULL,
+  `item_name` VARCHAR(255) NOT NULL,
+  `item_description` TEXT,
+  `quantity` INT(11) NOT NULL DEFAULT 1,
+  `weight_kg` DECIMAL(10,2) DEFAULT NULL,
+  `volume_m3` DECIMAL(10,3) DEFAULT NULL,
+  `fragile` BOOLEAN DEFAULT FALSE,
+  `temperature_controlled` BOOLEAN DEFAULT FALSE,
+  `reference_number` VARCHAR(100) DEFAULT NULL,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mission` (`mission_id`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Mission Billing
+CREATE TABLE IF NOT EXISTS `mission_billing` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mission_id` INT(11) UNSIGNED NOT NULL,
+  `invoice_number` VARCHAR(50) UNIQUE DEFAULT NULL,
+  `invoice_date` DATE DEFAULT NULL,
+  `base_rate` DECIMAL(10,2) NOT NULL,
+  `distance_charge` DECIMAL(10,2) DEFAULT 0,
+  `time_charge` DECIMAL(10,2) DEFAULT 0,
+  `additional_charges` DECIMAL(10,2) DEFAULT 0,
+  `subtotal` DECIMAL(10,2) NOT NULL,
+  `tax_rate` DECIMAL(5,2) DEFAULT 0,
+  `tax_amount` DECIMAL(10,2) DEFAULT 0,
+  `discount_amount` DECIMAL(10,2) DEFAULT 0,
+  `total_amount` DECIMAL(10,2) NOT NULL,
+  `currency` VARCHAR(10) DEFAULT 'TND',
+  `payment_status` ENUM('pending', 'partial', 'paid', 'overdue', 'cancelled') DEFAULT 'pending',
+  `payment_method` VARCHAR(50) DEFAULT NULL,
+  `payment_date` DATE DEFAULT NULL,
+  `payment_reference` VARCHAR(100) DEFAULT NULL,
+  `notes` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mission` (`mission_id`),
+  KEY `idx_invoice_number` (`invoice_number`),
+  KEY `idx_payment_status` (`payment_status`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Mission Updates/Timeline
+CREATE TABLE IF NOT EXISTS `mission_updates` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mission_id` INT(11) UNSIGNED NOT NULL,
+  `update_type` ENUM('status_change', 'location_update', 'note', 'photo', 'signature', 'issue') NOT NULL,
+  `old_status` VARCHAR(50) DEFAULT NULL,
+  `new_status` VARCHAR(50) DEFAULT NULL,
+  `latitude` DECIMAL(10,8) DEFAULT NULL,
+  `longitude` DECIMAL(11,8) DEFAULT NULL,
+  `message` TEXT,
+  `photo_path` VARCHAR(255) DEFAULT NULL,
+  `signature_path` VARCHAR(255) DEFAULT NULL,
+  `created_by` INT(11) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mission` (`mission_id`),
+  FOREIGN KEY (`mission_id`) REFERENCES `missions`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

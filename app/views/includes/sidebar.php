@@ -132,6 +132,28 @@
                     </a>
                 </li>
 
+                <!-- Fuel Management -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'fuel') ? 'active' : ''; ?> <?php echo !hasModuleAccess('fuel') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('fuel') ? APP_URL . '/fuel' : APP_URL . '/subscription-manager'; ?>">
+                        <i class="fas fa-gas-pump"></i> Carburant
+                        <?php if (!hasModuleAccess('fuel')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
+                <!-- Missions -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'missions') ? 'active' : ''; ?> <?php echo !hasModuleAccess('missions') ? 'text-muted' : ''; ?>"
+                       href="<?php echo hasModuleAccess('missions') ? APP_URL . '/missions' : APP_URL . '/subscription-manager'; ?>">
+                        <i class="fas fa-tasks"></i> Missions
+                        <?php if (!hasModuleAccess('missions')): ?>
+                            <i class="fas fa-lock text-warning float-right"></i>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
                 <!-- Smart Delivery AI -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo (isset($data['active_menu']) && $data['active_menu'] === 'smart_delivery') ? 'active' : ''; ?> <?php echo !hasModuleAccess('delivery') ? 'text-muted' : ''; ?>"
